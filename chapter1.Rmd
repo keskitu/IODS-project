@@ -3,7 +3,9 @@ title: "About the project"
 ---
 *Here's a* [link](https://github.com/keskitu/IODS-project) *to my IODS-project*
 
-# Notes
+```{r}
+date()
+```
 
 Hi!
 
