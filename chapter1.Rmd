@@ -10,7 +10,8 @@ Hi!
 Nice to be on the *Intro course on Open Data Science*. I work in risk 
 management field in insurance business. I have studied applied 
 mathematics and statistics in *University of Helsinki* some 10 years ago. 
-I expect to learn some basics about the course issues. 
+I expect to learn some basics about the open data science. 
+I found this course at the Mooc courses page. 
 
 Looking forward to learn more about **R**, and my goal is to study
 more **R** statiscs so I'm albe to use it in my work also, and perhaps also as a
