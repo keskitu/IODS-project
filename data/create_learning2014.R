@@ -71,3 +71,14 @@ learning2014 <- filter(learning2014, points>0)
 
 # set the working directory to iods project folder
 setwd("c:/Tuomas/Opiskelu/Open Data Science/IODS-project")
+
+# saving the learning data to data folder
+# set row.names to false, ohtervise 1, 2, ... , 166 (row numbers) 
+# will be the first column in the written file 
+write.csv(learning2014, "data/learning2014.csv", 
+          row.names = FALSE)
+
+# demonstrating file reading 
+data_demo <- read.csv(file = "data/learning2014.csv", 
+                      stringsAsFactors = FALSE)
+str(data_demo)
