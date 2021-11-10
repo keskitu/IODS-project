@@ -68,6 +68,7 @@ colnames(learning2014)[3] <- "attitude"
 
 # select rows where points is greater than zero
 learning2014 <- filter(learning2014, points>0)
+head(learning2014)
 
 # set the working directory to iods project folder
 setwd("c:/Tuomas/Opiskelu/Open Data Science/IODS-project")
@@ -82,3 +83,4 @@ write.csv(learning2014, "data/learning2014.csv",
 data_demo <- read.csv(file = "data/learning2014.csv", 
                       stringsAsFactors = FALSE)
 str(data_demo)
+head(data_demo)
