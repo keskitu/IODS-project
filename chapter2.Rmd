@@ -1,6 +1,4 @@
-# Insert chapter 2 title here
-
-*Describe the work you have done this week and summarize your learning.*
+# Regression and model validation
 
 - Describe your work and results clearly. 
 - Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods.
@@ -8,6 +6,85 @@
 
 ```{r}
 date()
+
 ```
 
-Here we go again...
+## Exploring the data
+
+The data is from the study where intention was to study different variables affecting students grades. It is a question type study.
+
+```{r}
+# first let's read the data: 
+learning2014 <- read.csv(file = "data/learning2014.csv", 
+                      stringsAsFactors = TRUE)
+
+# let's study the data structure etc. 
+str(learning2014)
+head(learning2014)
+```
+
+In the data we have 166 observations (studens), and 7 variables. Some of the variables are describing the studens *(gender, age, attitude)* and *(deep, stra, surf)* are stundens' answers in the study. Points are the points in the test, and the result variable. 
+
+Now let's dig deeper in to the data, and also get an overview of it: 
+
+```{r}
+#  ggplot library is allready installed and let's get the library into use
+library(ggplot2)
+
+#summarise data
+summary(learning2014)
+
+# let's also use library GGally
+
+library(GGally)
+
+# then let's draw a plot where also the possible dependencies can be seen
+
+# create a more advanced plot matrix with ggpairs()
+p <- ggpairs(learning2014, mapping = aes(col = gender), lower = list(combo = wrap("facethist", bins = 20)))
+p
+
+```
+
+In the summary picture you can really get the feeling of the data. Gender gives the coloring in the picture and all the information can be seen depending on the gender. In the picture you can see all the distributions of the variables. 
+
+**Here's few remarks on the distributions: **
+
+- Age is concentrated around *the usual* student ages *(under 30)*, but there are still lots of older students in the stud. 
+- All variables have significant variability
+- There seems to be attitude difference between gender *(females have better attitude)*
+
+**Here's few remarks on the correlations:**
+
+- Attitude has biggest correlation between points
+- Stra has also a small positive correlation between points as surf has a small negative correlation between points
+- All other correlations are reasonably small, but there's some correlation differences when examining between genders, like suface answers and deep answers for males
+- Attitude seems to be gender related
+
+## Linear model fitting
+
+Next, let's apply linear model to the data. Dependent variable *(is the variable you think shows the effect)* here is the points and all other are independent variables *(is the variable you think is the cause)*. 
+
+Let's choose three most valid independent variables by looking biggest correlations between the target variable (points). We get attitude, stra and surf as three biggest absolute correlation values. 
+
+
+```{r}
+ # Let's create a linear regression model with multiple explanatory variables
+my_model <- lm(points ~ attitude + stra + surf, data = learning2014)
+summary(my_model)
+plot(my_model) 
+
+```
+
+**Interpreting results...**
+
+
+```{r}
+ # Let's create a linear regression model with multiple just one independent variable
+my_model_2 <- lm(points ~ attitude, data = learning2014)
+summary(my_model_2)
+plot(my_model_2) 
+
+```
+
+**Interpreting results...**

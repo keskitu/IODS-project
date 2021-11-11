@@ -9,8 +9,11 @@
 
 # ---------------------------------------------
 
-# installing package dplyr
+# installing few packages
 install.packages("dplyr")
+install.packages("ggplot2")
+install.packages("GGally")
+
 # Access the dplyr library
 library(dplyr)
 
