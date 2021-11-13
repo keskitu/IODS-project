@@ -1,11 +1,10 @@
 ---
 title: "About the project"
 ---
-*Here's a* [link](https://github.com/keskitu/IODS-project) *to my IODS-project*
 
-```{r}
-date()
-```
+*Tuomas Keski-Kuha 6.11.2021*
+
+*Here's a* [link](https://github.com/keskitu/IODS-project) *to my IODS-project*
 
 Hi!
 

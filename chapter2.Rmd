@@ -1,9 +1,6 @@
 # Regression and model validation
 
-```{r}
-date()
-
-```
+*Tuomas Keski-Kuha 13.11.2021*
 
 ## Exploring the data
 
@@ -63,7 +60,6 @@ Next, let's apply linear model to the data. Response or dependent variable *(is 
 
 Let's choose three most valid independent variables by looking biggest correlations between the target variable (points). We get attitude, stra and surf as three biggest absolute correlation values. 
 
-
 ```{r}
  # Let's create a linear regression model with multiple explanatory variables
 my_model <- lm(points ~ attitude + stra + surf, data = learning2014)
@@ -105,9 +101,24 @@ summary(my_model_3)
 
 We observe that the standard error of the residuals became a bit larger even though the fitting of the parameters was more successfull. Adjusted R-squared still became lower which is not good, but is the difference here significant. I guess not if you observe the standard errors of the residuals (model vs. actual values) and compare them with previous modesl with multiple predictive variables. 
 
+## Graphical model validation
+
+Let's first draw a simple regression line to the data. Attitude being predictive variable: 
+
+```{r}
+# initialize plot with data and aesthetic mapping
+p1 <- ggplot(learning2014, aes(x = attitude, y = points))
+# define the visualization type (points)
+p2=p1+geom_point()
+# add a regression line
+p3 = p2 +geom_smooth(method = "lm")
+# draw the plot
+p3
+```
+
 Let's draw diagnostic plots and choose the following plots:
 
-- Residual vs. Fitted values
+- Residual vs Fitted values
 - Normal QQ-plot
 - Residuals vs Leverage
 
@@ -117,3 +128,9 @@ Let's draw diagnostic plots and choose the following plots:
 plot(my_model_3, which = c(1, 2, 5))
 
 ```
+
+Commenting the plots: 
+
+- **Residuals vs Fitted values:** In this plot we can see that the linearity is a valid assumption. Still there is lots of variablity but perhaps if we had more observations linearity assumption would even be stronger... or not. There's also some outliers (145, 56, 35) which may effect the linearity assumptions and also the fitting. Also in this plot we don't have a clear pattern, so it indicates that errors have a constant variance, and the variability of actual error sizes does not depend on the predictive variables. 
+- **Normal QQ-plot:** It looks like normality assumption of the errors is quite valid here. In the plot we have a nice line, and it indicates that the errors comes from normal distribution. Still there are some outliers which do not fit so nicely, but as it is the extreme values are rare. But just looking the picture normality assumtion is not far fetched.
+- **Residuals vs. Leverage:** This plot gives the meaning of the outliers (single observations) for the model, and do the outliers have an unusually high impact to the model. It looks like there is no outliers which are significant for the model. Those points which could have a high impact does not fall far away from the average of standardized residual. Outliers in the data are that close to average of attitude, so outliers are not so effective. 
