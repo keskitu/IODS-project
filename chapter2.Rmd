@@ -1,9 +1,5 @@
 # Regression and model validation
 
-- Describe your work and results clearly. 
-- Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods.
-- Assume the reader has no previous knowledge of your data or the more advanced methods you are using.
-
 ```{r}
 date()
 
@@ -63,7 +59,7 @@ In the summary picture you can really get the feeling of the data. Gender gives 
 
 ## Linear model fitting
 
-Next, let's apply linear model to the data. Dependent variable *(is the variable you think shows the effect)* here is the points and all other are independent variables *(is the variable you think is the cause)*. 
+Next, let's apply linear model to the data. Response or dependent variable *(is the variable you think shows the effect)* here is the points and all other are predictors orindependent variables *(is the variable you think is the cause of the effect)*. 
 
 Let's choose three most valid independent variables by looking biggest correlations between the target variable (points). We get attitude, stra and surf as three biggest absolute correlation values. 
 
@@ -72,19 +68,52 @@ Let's choose three most valid independent variables by looking biggest correlati
  # Let's create a linear regression model with multiple explanatory variables
 my_model <- lm(points ~ attitude + stra + surf, data = learning2014)
 summary(my_model)
-plot(my_model) 
 
 ```
 
-**Interpreting results...**
+We fitted  linear model: **y = a0 + a1x1 + a2x2 +a3x3**
+Looking the results:
+
+- the constant (a0) has a quite large estimated value, but also standard error is quite large. Corresponding p value, it looks like that zero hypothesis (a0 = 0) is unlikely (probability for that is 0,3 %)
+- a1 -value or the attitude variable multiplier is statistically very significant, so the zero hypothesis (a1 = 0) is very unlikely (p-value is really small)
+- other parameters a2, a3 have not significant p-values, so it seems reasonable not to have x2 and x3 in the model (zero hyphotesis is likely a2 = a3 = 0)
+
+Of course model will fit differently if we just ignore first one of the non significant variables, but here it seems that small a2 or a3 would not enchange the model that much, and even those extra parameters could even worsen the models prediction capability. But let's fit a linear model with two variables (attitude and stra): 
 
 
 ```{r}
- # Let's create a linear regression model with multiple just one independent variable
-my_model_2 <- lm(points ~ attitude, data = learning2014)
+ # Let's create a linear regression model with multiple independent variable
+my_model_2 <- lm(points ~ attitude + stra, data = learning2014) 
 summary(my_model_2)
-plot(my_model_2) 
 
 ```
 
-**Interpreting results...**
+Dropping the surf value did not affect that much, but at least it got for the a0 a better fit. Still overall results aren't that impressive without the surf, if you look the residual standard error of residuals and also the residual values. So it seems that the best thing here would be to drop also the stra value (usually simple the better). It looks like residuals have the same kind of distribution as in the previous model. 
+
+Multiple R-squared value (ranges 0-1) gives answer the the proportion of the variance in the response variable (the effect) of a regression model that can be explained by the predictor variables (the cause). Low value here  would indicate that the variance in  response variable (points) is not explained that well by the predictors variables (attitude and stra). And here indeed R-squared value is not impressive, and there's lot of variability which is not explained well by the predictors.
+
+Also the adjusted R-squared did not change that much between the fist and the second model, and its score 0,2. Adjusted R-squared is more handy than Multiple R-squared, because it takes into account the number variables in the model and adjust the Multiple R-squared accordingly (R-squared willi increase as you add more variables). So with adjusted R-squared one can really evaluate the difference between the models when we consider the variance in the response variable.
+
+For the fun of it, let's also try fitting a simple line **(y = a0+a1x1)** where x1 is attitude. 
+
+```{r}
+ # Let's create a linear regression model with  just one independent variable
+my_model_3 <- lm(points ~ attitude, data = learning2014) 
+summary(my_model_3)
+
+```
+
+We observe that the standard error of the residuals became a bit larger even though the fitting of the parameters was more successfull. Adjusted R-squared still became lower which is not good, but is the difference here significant. I guess not if you observe the standard errors of the residuals (model vs. actual values) and compare them with previous modesl with multiple predictive variables. 
+
+Let's draw diagnostic plots and choose the following plots:
+
+- Residual vs. Fitted values
+- Normal QQ-plot
+- Residuals vs Leverage
+
+```{r}
+# draw diagnostic plots using the plot() function. Choose the plots 1, 2 and 5
+
+plot(my_model_3, which = c(1, 2, 5))
+
+```
