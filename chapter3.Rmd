@@ -1,0 +1,6 @@
+# Logistic regression
+
+*Tuomas Keski-Kuha 15.11.2021*
+
+## Data wrangling
+
