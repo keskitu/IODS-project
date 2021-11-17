@@ -2,5 +2,68 @@
 
 *Tuomas Keski-Kuha 15.11.2021*
 
-## Data wrangling
+## Data exploration and finding relevant variables
 
+```{r}
+# access a few libraries: 
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
+# first let's read the data: 
+alc<- read.csv(file = "https://github.com/rsund/IODS-project/raw/master/data/alc.csv", 
+                      stringsAsFactors = FALSE, sep = ",")
+
+# let's study the data structure etc. 
+glimpse(alc)
+colnames(alc)
+
+```
+
+**Data set information** *(straight from the web page)*: 
+
+This data approach student achievement in secondary education of two Portuguese schools. The data attributes include student grades, demographic, social and school related features) and it was collected by using school reports and questionnaires. Important note: the target attribute G3 has a strong correlation with attributes G2 and G1. This occurs because G3 is the final year grade (issued at the 3rd period), while G1 and G2 correspond to the 1st and 2nd period grades. It is more difficult to predict G3 without G2 and G1, but such prediction is much more useful (see paper source for more details).
+
+Still we are going to use the data to predict binary variable for alcohol consuption (high_use).
+
+Expected 4 variables to effect alcohol consumption are as follows (the variable picking was biased as I did see the results in the datacamp exercise :D ). Anyway let's pick 
+
+- **sex:** it is quite typical that males drink more 
+- **absences:** one could think that absences would go up for high alcohol users
+- **failures:** same reasoning as for absences
+- **goout:** thinking here is quite obvious, someone goes out more is perhaps drinkin more
+
+Let's draw some plots and tables if we could see whether there might be any relationship between target variable (high_use) and predictors. 
+
+
+```{r}
+# produce summary statistics by group for studying relationship between high_use and sex
+alc %>% group_by(sex, high_use) %>% summarise(count = n())
+
+# let's draw a plot to study how absences might relate to the target variable
+g1 <- ggplot(alc, aes(x = high_use, y = absences, col = sex))
+
+g1 + geom_boxplot() + ggtitle("Student absences by alcohol consumption and sex")
+
+
+# initialize a plot of high_use related to gout
+g2 <- ggplot(data = alc, aes(x = goout, fill = high_use))
+
+# define the plot as a bar plot and draw it
+g2 + geom_bar() + ggtitle("Student go out by high alcohol consumption")
+
+
+#  let's count few crosstables for examining high_use relatedness to failures
+table(high_use = alc$high_use, failures = alc$failures)
+
+```
+
+
+## Logistic regression model
+
+```{r}
+# find the model with glm()
+m <- glm(high_use ~ sex + absences +  goout + failures, data = alc, family = "binomial")
+
+summary(m)
+```
