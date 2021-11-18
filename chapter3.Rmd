@@ -29,7 +29,7 @@ Still we are going to use the data to predict binary variable for alcohol consup
 Expected 4 variables to effect alcohol consumption are as follows (the variable picking was biased as I did see the results in the datacamp exercise :D ). Anyway let's pick 
 
 - **sex:** it is quite typical that males drink more 
-- **absences:** one could think that absences would go up for high alcohol users
+- **absences:** one could think that absences would go up for high alcohol users due to hangovers and other side effects
 - **failures:** same reasoning as for absences
 - **goout:** thinking here is quite obvious, someone goes out more is perhaps drinkin more
 
@@ -45,12 +45,17 @@ g1 <- ggplot(alc, aes(x = high_use, y = absences, col = sex))
 
 g1 + geom_boxplot() + ggtitle("Student absences by alcohol consumption and sex")
 
+```
 
+- **sex:** It looks lie there is big difference in high alcogol users between sexes. Males tend to use much more, as expected before. 
+- **absences:** In the plot we draw absences with sex, and there we could also see that in high users there is more tendency to be absent from the classes. It is interesting that for females the difference is not that significant as it is for males. 
+
+```{r}
 # initialize a plot of high_use related to gout
 g2 <- ggplot(data = alc, aes(x = goout, fill = high_use))
 
 # define the plot as a bar plot and draw it
-g2 + geom_bar() + ggtitle("Student go out by high alcohol consumption")
+g2 + geom_bar() + ggtitle("Student go-out-tendency by high alcohol consumption")
 
 
 #  let's count few crosstables for examining high_use relatedness to failures
@@ -58,12 +63,52 @@ table(high_use = alc$high_use, failures = alc$failures)
 
 ```
 
+- **goout:** It can be seen from the bar chart that students who go out more will use alcohol more. The effect is quite clear, and this was quite expected. 
+- **failures:** There can be seen a tendency to fail classes in the past if one is high user as expected, but this variable is tricky because 1-3 failure classes has so few instances. It could disturb modeling with this feature. 
 
 ## Logistic regression model
 
+In this chapter, let's apply a logistic regression model to predict high alcohol use. For the model we use those variables which seemed have an effect to high alcohol use *(sex, absences, go_out, failures)*. 
+
 ```{r}
-# find the model with glm()
-m <- glm(high_use ~ sex + absences +  goout + failures, data = alc, family = "binomial")
+# find the model with glm() (target high_use)
+m <- glm(high_use ~ sex + goout + absences + failures, data = alc, family = "binomial")
 
 summary(m)
+```
+
+Model summary seems to tell that all of the predictive variables have good fit overall and are statistically significant (all others have p-value < 0.001, but for failures the p-value is 0,03 which is not that significant, and it is reasonable to assume that it won't be significant for prediction power). Also here we cannot be sure that there might be strong correlations between predictors, so perhaps it could be wise to study those also. 
+
+Let's also present the coefficients and also oddsrations, and confidence intervals: 
+
+```{r}
+# compute odds ratios (OR) round the results
+OR <- coef(m) %>% exp %>% round(2)
+
+# compute confidence intervals (CI), round the results
+CI <- confint(m) %>% exp %>% round(2)
+
+# print out the odds ratios with their confidence intervals
+cbind(OR, CI)
+
+```
+Interpret: 
+
+## Predictions
+
+Let's use the logistic regression model for predicting high alcohol use from the selected data. Well calculate probability for high alcohol use and then form a new variable which 
+
+```{r}
+# predict() the probability of high_use
+probabilities <- predict(m, type = "response")
+
+# add the predicted probabilities to 'alc'
+alc <- mutate(alc, probability = probabilities)
+
+# use the probabilities to make a prediction of high_use
+alc <- mutate(alc, prediction = probability > 0.5)
+
+# tabulate the target variable versus the predictions
+table(high_use = alc$high_use, prediction = alc$prediction)
+
 ```
