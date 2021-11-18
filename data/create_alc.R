@@ -8,9 +8,12 @@
 
 # Access the dplyr library
 library(dplyr)
+library(tidyr)
+library(ggplot2)
+
 
 setwd("c:/Tuomas/Opiskelu/Open Data Science/IODS-project")
 
 #  file reading 
-data_demo <- read.csv(file = "data/asdf.csv", 
+asasas <- read.csv(file = "data/student-mat.csv.csv", 
                       stringsAsFactors = TRUE)
