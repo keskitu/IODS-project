@@ -1,6 +1,6 @@
 # Logistic regression
 
-*Tuomas Keski-Kuha 15.11.2021*
+*Tuomas Keski-Kuha 21.11.2021*
 
 ## Data exploration and finding relevant variables
 
@@ -47,7 +47,7 @@ g1 + geom_boxplot() + ggtitle("Student absences by alcohol consumption and sex")
 
 ```
 
-- **sex:** It looks lie there is big difference in high alcogol users between sexes. Males tend to use much more, as expected before. 
+- **sex:** It looks like there is big difference in high alcogol users between sexes. Males tend to use much more, as expected before. 
 - **absences:** In the plot we draw absences with sex, and there we could also see that in high users there is more tendency to be absent from the classes. It is interesting that for females the difference is not that significant as it is for males. 
 
 ```{r}
@@ -94,9 +94,9 @@ CI <- confint(m) %>% exp %>% round(2)
 cbind(OR, CI)
 
 ```
-Interpret: 
+Did not have time to make adjustmens with the Intercept factor, but luckily it's near zero, so it won't matter that much in this case. It seems that sex and goout odds ratios are way bigger than one, and that would indicate that they are relevant for probability of high alcohol use. Failures and absences do still have figure more than one but just slightly, so they not seem to be so relevant for the high alcohol use probablity. Also the confidence levels for these values indicate that they are not that significant. 
 
---------------------------------------------
+---------------------------------------------------
 
 ## Predictions
 
@@ -127,19 +127,116 @@ g + geom_point()
 Model gives sensible results. We can see that there are wrong results 61+16 vs. correct ones 243+50. 
 
 Let's also calculate a loss function, and use that for calculating inaccuracy of the model. This can also be calculated from the figures in the previous paragraph (incorrect cases divided by all cases). 
+
 ```{r}
 
 # define a loss function (average prediction error)
 loss_func <- function(class, prob) {
   n_wrong <- abs(class - prob) > 0.5
-  round(mean(n_wrong),4)
+  mean(n_wrong)
 }
 
 # call loss_func to compute the average number of wrong predictions in the (training) data
-loss_func(class = alc$high_use, prob = alc$probability)
+round(loss_func(class = alc$high_use, prob = alc$probability), 4)
 
 ```
 
-So the model is correct on average for 79 % of the cases and incorrect for 26 % of the cases. 
+So the model is correct on average for 79 % of the cases and incorrect for 21 % of the cases. 
 
 It seems that it's hard to predict high use (61 times model get it wrong vs. 50 correct ones), but for low uses it's far more precise (16 wrong vs. 243 correct). But if you'd use simple guessing (flip of a coin for a model) it will be correct approx 50 % of the cases, so the model gives reasonable accuracy. 
+
+---------------------------------------------------
+
+## Cross-validation
+
+Let's make a 10 fold cross-validation for validating the logistic regression model we used above:
+
+- We divide data into 10 same size segments (data groups 1, 2, 3, ..., 10). 
+- Then lets fit the model for data groups 2 to 10 (training set) and measure prediction error for the group 1 (test set). 
+- After that we use data groups 1, 3, 4..., 10 and measure prediction error for group 2. 
+- We continue till we have used all the data this way. Last  prediction error is calculated for the data group 10 fitting the data from groups 1 to 9.
+- Then we can average all these prediction errors for the validation figure. 
+
+``` {r}
+
+# setting the random seed, so we can re-calculate exactly same results over again
+seed = 123
+# K-fold cross-validation
+library(boot)
+cv <- cv.glm(data = alc, cost = loss_func, glmfit = m, K = 10)
+
+# average number of wrong predictions in the cross-validation, this is not adjusted value, but a raw inaccuracy rate in the cross-validation
+round(cv$delta[1], 4)
+
+``` 
+So cross-validation gives a really close figure comparing to prediction error we had when used all the data for training.  
+
+---------------------------------------------------
+
+## Cross-validating different models
+
+```{r}
+
+# Let's define the wanted predictor sets (just using the column numbers: 
+
+# first test set has many predictors (alomost all of them and more than 40)
+testi_1 <- c(1:24, 27, 29:30,  31, 33:48, 50)
+# we drop few off in testi_2 predictor set, but it still has quite many (approx 30)
+testi_2 <- c(2:24, 29:31, 33:38, 50)
+# we drop some more, still keeping the most relevant (approx 20)
+testi_3 <- c(2:11, 12, 17, 24, 29:30,  31, 33:35, 50)
+# now we keep just 10
+testi_4 <- c(2:5, 24, 27, 30,  31, 33, 50)
+# the last predictor set has only 3, number 50 is high_use (target variable)
+testi_5 <- c(2, 24, 33, 50)
+
+
+# build a list for different prodictor set
+testi_setti <- list(testi_1, testi_2, testi_3, 
+                    testi_4, testi_5)
+
+# initialising the result matrix
+tulokset <- matrix(nrow = 2, ncol =5)
+
+# defining a loop which takes one testi_setti items (predictor vectors) at a time, and calculates training error for the whole data set and also test error for the 10-fold cross-validation (all this code is copy pasted from above)
+
+for (i in 1:5) {
+  
+pred_var <- testi_setti[[i]]
+
+# find the model with glm() (target high_use)
+m2 <- glm(high_use~., data = alc[pred_var], family = "binomial")
+
+# predict() the probability of high_use
+probabilities <- predict(m2, type = "response")
+
+# add the predicted probabilities to 'alc'
+alc <- mutate(alc, probability = probabilities)
+
+# use the probabilities to make a prediction of high_use
+alc <- mutate(alc, prediction = probability > 0.5)
+
+# call loss_func to compute the average number of wrong predictions in the (training) data
+train_err <- round(loss_func(class = alc$high_use, prob = alc$probability), 4)
+
+seed= 123
+
+# cross-validation
+cv <- cv.glm(data = alc[pred_var], cost = loss_func, glmfit = m2, K = 10)
+
+# here we'll have results for cross-validation
+test_err <- round(cv$delta[1], 4)
+
+# saving the results to tulokset matrix
+tulokset[1,i] <- train_err
+tulokset[2,i] <- test_err
+
+}
+
+tulokset
+
+```
+In tulokset matrix we have the result so that the first row is for training errors for the whole data and second row is test errors for cross-validation. Column 1 model has almost all predictor that one can pick and we decrease predictors (keeping the most relevant) till we get to fifth column which has only three. 
+
+
+It can bee noticed that training error tend to go up when there are fewer predictors in the model. The model learns better from the data and is more complex with more predictors, but on the other hand test error is very large. So the model with many predictors becomes dependent on the data that has been used, and it does not work that well when you fit it with different cross-validation sets. One would say that good model with significant predictor is far more robust, and simpler and passes the testing better.  
