@@ -70,8 +70,18 @@ corrplot(cor_matrix, method="circle", type="upper", cl.pos="b", tl.pos="d", tl.c
 ```
 
 
+MUISTA TULKITA TULOKSET!!!!
 
-<span style="color: red;">*Describe and interpret the outputs, commenting on the distributions of the variables and the relationships between them:*</span>
+MUISTA TULKITA TULOKSET!!!!
+
+MUISTA TULKITA TULOKSET!!!!
+
+MUISTA TULKITA TULOKSET!!!!
+
+MUISTA TULKITA TULOKSET!!!!
+
+MUISTA TULKITA TULOKSET!!!!
+
 
 
 ------------------------------------------------------
@@ -136,12 +146,11 @@ train <- boston_scaled[ind,]
 # create test set 
 test <- boston_scaled[-ind,]
 
-
 ```
 
 ----------------------------------------------------
 
-## Fitting the Linear Discriminant Analysis model
+## Classification - Fitting the Linear Discriminant Analysis model
 
 ----------------------------------------------------
 
@@ -183,8 +192,7 @@ lda.arrows(lda.fit, myscale = 1)
 
 ----------------------------------------------------
 
-
-In the next phase we save crime gategories from the test set. 
+In the next phase we save crime gategories from the test set. Also we make predictions from test data, and see how accurate the model is: 
 
 ```{r}
 
@@ -193,3 +201,142 @@ correct_classes <- test$crime
 
 # remove the crime variable from test data
 test <- dplyr::select(test, -crime)
+
+# predict classes with test data
+lda.pred <- predict(lda.fit, newdata = test)
+
+# cross tabulate the results
+table(correct = correct_classes, predicted = lda.pred$class)
+
+
+```
+Model's predicting power seems to be good indeed. Just few bigger inaccuracies, where correct class is two classes away. Still all results end up quite near the diagonal. Especially the high class seems to be "easy" to predict. 
+
+----------------------------------------------------
+
+## Clustering - Fitting the K-means model
+
+----------------------------------------------------
+
+*Exercise 7: Reload the Boston dataset and standardize the dataset (we did not do this in the Datacamp exercises, but you should scale the variables to get comparable distances). Calculate the distances between the observations. Run k-means algorithm on the dataset. Investigate what is the optimal number of clusters and run the algorithm again. Visualize the clusters (for example with the pairs() or ggpairs() functions, where the clusters are separated with colors) and interpret the results. *
+
+----------------------------------------------------
+
+```{r}
+# Load the data again and after that standardize all variables (mean = 0 and variance = 1)
+data("Boston")
+
+# center and standardize variables
+boston_scaled <- scale(Boston)
+
+# change the object to data frame
+boston_scaled <- as.data.frame(boston_scaled)
+
+```
+
+Then, we calculate the distances and apply K-means algorithm to make clusters:
+
+```{r}
+
+# euclidean distance matrix
+dist_eu <- dist(boston_scaled)
+
+# look at the summary of the distances
+summary(dist_eu)
+
+# k-means clustering
+km <-kmeans(boston_scaled, centers = 3)
+
+# plot the Boston scaled dataset with clusters
+pairs(boston_scaled, col = km$cluster)
+
+```
+
+Finding the optimal value for the number of clusters: 
+
+```{r}
+
+set.seed(123)
+
+# determine the number of clusters
+k_max <- 10
+
+# calculate the total within sum of squares
+twcss <- sapply(1:k_max, function(k){kmeans(Boston, k)$tot.withinss})
+
+# visualize the results
+qplot(x = 1:k_max, y = twcss, geom = 'line')
+
+```
+
+The optimal value is the value where the WCSS (within cluster sum of squares) drops radically (here the optimal number of clusters for K-means seems to be 2).
+
+```{r}
+
+# k-means clustering when k = 2
+km <-kmeans(boston_scaled, centers = 2)
+
+# plot the Boston scaled dataset with clusters
+pairs(boston_scaled, col = km$cluster)
+
+```
+
+MUISTA TULKITA TULOKSET!!!!
+
+MUISTA TULKITA TULOKSET!!!!
+
+MUISTA TULKITA TULOKSET!!!!
+
+MUISTA TULKITA TULOKSET!!!!
+
+MUISTA TULKITA TULOKSET!!!!
+
+MUISTA TULKITA TULOKSET!!!!
+
+----------------------------------------------------
+
+## Classification of clusters (Bonus)
+
+----------------------------------------------------
+
+*Bonus exercise: Perform k-means on the original Boston data with some reasonable number of clusters (> 2). Remember to standardize the dataset. Then perform LDA using the clusters as target classes. Include all the variables in the Boston data in the LDA model. Visualize the results with a biplot (include arrows representing the relationships of the original variables to the LDA solution). Interpret the results. Which variables are the most influencial linear separators for the clusters?*
+
+----------------------------------------------------
+
+
+```{r}
+# Load the data again and after that standardize all variables (mean = 0 and variance = 1)
+data("Boston")
+
+# center and standardize variables
+boston_scaled <- scale(Boston)
+
+# change the object to data frame
+boston_scaled <- as.data.frame(boston_scaled)
+
+# k-means clustering
+km <-kmeans(boston_scaled, centers = 5)
+
+```
+
+Let's add clusters to the data and then apply linear discrinmination analysis to the clusters that we got from K-means clustering: 
+
+```{r}
+# add the new categorical value to scaled data
+boston_scaled <- data.frame(boston_scaled, km$cluster)
+
+set.seed(123)
+
+# linear discriminant analysis
+lda.fit <- lda(km.cluster ~ ., data = boston_scaled)
+
+# print the lda.fit object
+lda.fit
+
+# plot the lda results
+plot(lda.fit, dimen = 2, col = classes, pch = classes)
+lda.arrows(lda.fit, myscale = 1)
+
+```
+
+It seems clear that chas and rad variables are most influencial linear separators for the clusters. 
