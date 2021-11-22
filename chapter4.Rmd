@@ -1,0 +1,195 @@
+# Clustering and classification
+
+*Tuomas Keski-Kuha 22.11.2021*
+
+------------------------------------------------------
+
+## Data exploration and finding correlations
+
+----------------------------------------------------
+
+*Exercise 2: Load the Boston data from the MASS package. Explore the structure and the dimensions of the data and describe the dataset briefly, assuming the reader has no previous knowledge of it. Details about the Boston dataset can be seen for example here.*
+
+----------------------------------------------------
+
+Let's see the Boston data in the following: 
+
+```{r}
+# access a few libraries: 
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(corrplot)
+library(GGally)
+library(reshape2)
+
+# access the MASS package
+library(MASS)
+
+# load the data
+data("Boston")
+
+# explore the dataset
+str(Boston)
+dim(Boston)
+
+```
+
+**Data set information**
+
+Data is Housing Values in Suburbs of Boston. It has 506 rows and 14 columns. It has some information on the suburbs of Boston (towns).
+Here is the [link](https://stat.ethz.ch/R-manual/R-devel/library/MASS/html/Boston.html) to the data page, where one can see the full details. 
+
+----------------------------------------------------
+
+*Exercise 3: Show a graphical overview of the data and show summaries of the variables in the data. Describe and interpret the outputs, commenting on the distributions of the variables and the relationships between them.*
+
+----------------------------------------------------
+
+Let's visualize the data and take a look of the distributions of the variables and relations between variables. 
+
+```{r}
+
+summary(Boston)
+
+# First lets make a long table from Boston data
+melt.boston <- melt(Boston)
+
+# Then plot every variable, so we'll see the distributions of variables
+ggplot(data = melt.boston, aes(x = value)) + 
+stat_density() + 
+facet_wrap(~variable, scales = "free")
+
+# calculate the correlation matrix and round it
+cor_matrix<-cor(Boston) %>% round(digits = 2)
+
+# visualize the correlation matrix
+corrplot(cor_matrix, method="circle", type="upper", cl.pos="b", tl.pos="d", tl.cex = 0.6)
+
+
+```
+
+
+
+<span style="color: red;">*Describe and interpret the outputs, commenting on the distributions of the variables and the relationships between them:*</span>
+
+
+------------------------------------------------------
+
+## Data preparing and making training and test datasets
+
+----------------------------------------------------
+
+*Exercise 4: Standardize the dataset and print out summaries of the scaled data. How did the variables change? Create a categorical variable of the crime rate in the Boston dataset (from the scaled crime rate). Use the quantiles as the break points in the categorical variable. Drop the old crime rate variable from the dataset. Divide the dataset to train and test sets, so that 80% of the data belongs to the train set.*
+
+----------------------------------------------------
+
+Let's scale the variables so that the mean = 0 and variance = 1 for all variables in the dataset: 
+
+```{r}
+# center and standardize variables
+boston_scaled <- scale(Boston)
+
+# change the object to data frame
+boston_scaled <- as.data.frame(boston_scaled)
+
+# summaries of the scaled variables
+summary(boston_scaled)
+ 
+```
+
+We can see now that all the variables have negative and positive values around zero. 
+
+In the following section we create a new categorical quantile variable from *crim* variable, so that the new variable has labels *low, med_low, med_high, high* depending the scaled *crim* variable, and all the new variables have 25 % of the data. 
+
+```{r}
+
+# create a quantile vector of crim and print it
+bins <- quantile(boston_scaled$crim)
+
+# create a categorical variable 'crime'
+crime <- cut(boston_scaled$crim, breaks = bins, include.lowest = TRUE, labels = c("low", "med_low", "med_high", "high"))
+
+# remove original crim from the dataset
+boston_scaled <- dplyr::select(boston_scaled, -crim)
+
+# add the new categorical value to scaled data
+boston_scaled <- data.frame(boston_scaled, crime)
+
+```
+
+After that we make training and test sets from the data, so that we pick randomly 80 % of the rows to the training set and the rest to the test set.
+
+```{r}
+
+# number of rows in the Boston dataset 
+n <- nrow(boston_scaled)
+
+set.seed(123)
+
+# choose randomly 80% of the rows
+ind <- sample(n,  size = n * 0.8)
+
+# create train set
+train <- boston_scaled[ind,]
+
+# create test set 
+test <- boston_scaled[-ind,]
+
+
+```
+
+----------------------------------------------------
+
+## Fitting the Linear Discriminant Analysis model
+
+----------------------------------------------------
+
+*Exercise 5: Fit the linear discriminant analysis on the train set. Use the categorical crime rate as the target variable and all the other variables in the dataset as predictor variables. Draw the LDA (bi)plot.*
+
+----------------------------------------------------
+
+
+```{r}
+
+# linear discriminant analysis
+lda.fit <- lda(crime ~ ., data = train)
+
+# print the lda.fit object
+lda.fit
+
+# the function for lda biplot arrows
+lda.arrows <- function(x, myscale = 1, arrow_heads = 0.1, color = "orange", tex = 0.75, choices = c(1,2)){
+  heads <- coef(x)
+  arrows(x0 = 0, y0 = 0, 
+         x1 = myscale * heads[,choices[1]], 
+         y1 = myscale * heads[,choices[2]], col=color, length = arrow_heads)
+  text(myscale * heads[,choices], labels = row.names(heads), 
+       cex = tex, col=color, pos=3)
+}
+
+# target classes as numeric
+classes <- as.numeric(train$crime)
+
+# plot the lda results
+plot(lda.fit, dimen = 2, col = classes, pch = classes)
+lda.arrows(lda.fit, myscale = 1)
+
+```
+
+----------------------------------------------------
+
+*Exercise 6: Save the crime categories from the test set and then remove the categorical crime variable from the test dataset. Then predict the classes with the LDA model on the test data. Cross tabulate the results with the crime categories from the test set. Comment on the results. *
+
+----------------------------------------------------
+
+
+In the next phase we save crime gategories from the test set. 
+
+```{r}
+
+# save the correct classes from test data
+correct_classes <- test$crime
+
+# remove the crime variable from test data
+test <- dplyr::select(test, -crime)
