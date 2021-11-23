@@ -73,20 +73,9 @@ corrplot(cor_matrix, method="circle", type="upper", cl.pos="b", tl.pos="d", tl.c
 
 ```
 
+There is significant variability in the data as some variables are really skewed towards the minimum or the maximum value (most of the values are near or exactly minimum or maximum). There is also few integer variables in the data, which don't fit quite well to the density plot above. Few of the variables seems   normally distributed. 
 
-MUISTA TULKITA TULOKSET!!!!
-
-MUISTA TULKITA TULOKSET!!!!
-
-MUISTA TULKITA TULOKSET!!!!
-
-MUISTA TULKITA TULOKSET!!!!
-
-MUISTA TULKITA TULOKSET!!!!
-
-MUISTA TULKITA TULOKSET!!!!
-
-
+It is clear that there is really strong correlations (positive and negative) between variables in the data, as correlation plot shows. In the correlation plot the colour and the size of the circles tells about the correlations between variables. 
 
 ------------------------------------------------------
 
@@ -162,6 +151,7 @@ test <- boston_scaled[-ind,]
 
 ----------------------------------------------------
 
+Let's fit the LDA model to training data and visualize results. 
 
 ```{r}
 
@@ -190,6 +180,8 @@ lda.arrows(lda.fit, myscale = 1)
 
 ```
 
+Discrimination analysis seem to fit the data quite well, as plot indicates. Rad variable (index of accessibility to radial highways) and also zn (proportion of residential land zoned for lots over 25,000 sq.ft.) seem to have biggest effect on the classification process. It looks like rad variable gives really good discrimination for higher crime towns. For the lower crim towns it's not that clear at all. In the picture it seems that rad variable separates higher crime towns from the rest. 
+
 ----------------------------------------------------
 
 *Exercise 6: Save the crime categories from the test set and then remove the categorical crime variable from the test dataset. Then predict the classes with the LDA model on the test data. Cross tabulate the results with the crime categories from the test set. Comment on the results. *
@@ -214,6 +206,7 @@ table(correct = correct_classes, predicted = lda.pred$class)
 
 
 ```
+
 Model's predicting power seems to be good indeed. Just few bigger inaccuracies, where correct class is two classes away. Still all results end up quite near the diagonal. Especially the high class seems to be "easy" to predict. 
 
 ----------------------------------------------------
