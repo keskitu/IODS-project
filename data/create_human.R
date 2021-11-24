@@ -35,19 +35,21 @@ dim(gii)
 # print out summaries of the variables if gii
 summary(gii)
 
-colnames(hd)
-colnames(gii)
-
 # new column names for gii data, from column 3
 hd_new_names <- c("HDI", "Life.Exp", "Edu.Exp",
                    "Edu.Mean", "GNI", "GNI.Minus.Rank")
+# changing names (hd)
+colnames(hd)[3:8] <- hd_new_names
 
 # new column names for gii data, from column 3
 gii_new_names <- c("GII", "Mat.Mor", "Ado.Birth", 
                    "Parli.F", "Edu2.F", "Edu2.M", 
                    "Labo.F", "Labo.M")
 
-colnames(hd)[3:8] <- hd_new_names
-
+# changing names (gii)
 colnames(gii)[3:10] <- gii_new_names
+
+# Create GII: 
+# "Edu2.FM" = Edu2.F / Edu2.M
+# "Labo.FM" = Labo2.F / Labo2.M
 
