@@ -1,4 +1,4 @@
-# Tuomas Keski-Kuha, 24.11.2021
+# Tuomas Keski-Kuha, 25.11.2021
 # Week4 data wrangling exercise 
 
 # data from http://s3.amazonaws.com/assets.datacamp.com
@@ -8,7 +8,7 @@
 # human-development-index-hdi
 # ---------------------------------------------
 
-# Access the dplyr library
+# Access the some libraries
 library(dplyr)
 library(tidyr)
 library(ggplot2)
@@ -53,3 +53,16 @@ colnames(gii)[3:10] <- gii_new_names
 # "Edu2.FM" = Edu2.F / Edu2.M
 # "Labo.FM" = Labo2.F / Labo2.M
 
+gii$Edu2.FM <- gii$Edu2.F/gii$Edu2.M
+gii$Labo.FM <- gii$Labo.F/gii$Labo.M
+
+human <- inner_join(hd, gii, by = "Country")
+
+# set the working directory to iods project folder
+setwd("c:/Tuomas/Opiskelu/Open Data Science/IODS-project")
+
+# saving the human data to data folder
+# set row.names to false, ohtervise 1, 2, ... , 166 (row numbers) 
+# will be the first column in the written file 
+write.csv(human, "data/human.csv", 
+          row.names = FALSE)
