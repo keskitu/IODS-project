@@ -4,7 +4,7 @@ title: "Clustering and classification"
 
 # Clustering and classification
 
-*Tuomas Keski-Kuha 22.11.2021*
+*Tuomas Keski-Kuha 28.11.2021*
 
 ------------------------------------------------------
 
