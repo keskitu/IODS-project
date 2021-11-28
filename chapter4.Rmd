@@ -78,6 +78,20 @@ There is significant variability in the data as some variables are really skewed
 
 It is clear that there is really strong correlations (positive and negative) between variables in the data, as correlation plot shows. In the correlation plot the colour and the size of the circles tells about the correlations between variables. 
 
+Quite interestingly the *rad* (radial highway) accessibility) and the *tax* (property tax rate) variables have the biggest positive correlations between the crime rate in towns. Some might think that variables like *dis* (distances to employment centers) and *lstat* (lower status of population(percent)) would have more correlation between crime rate. In the plot we can also see that *rad* and *tax* are heavily correlated so they are almost like one variable. 
+
+We can also see that there seems to be significant variables like: 
+
+- *rad*: correlation between crime rate 
+- *tax*: correlation between *rad* and crime rate
+- *indus* (proportion of non-retail business, traditional industry): has many significant correlations between other key variable
+- *nox* (nitrogen oxides concentration): has many significant correlations between key variables, seems like a variable which is hard to interpret in any reasonable way, at least there is positive correlation between *indus*.
+- *age* (proportion of owner-occupied units built prior 1940): old buildings is negatively correlated between distance to centers and positively between *indus* (more older buildings in more industrialized towns)
+- *dis*: many significant correlations between other variables, quite logically negatively correlated between *indus* so traditional industry is far from main centers.
+- *lstat*: many correlations to other variables, but perhaps not that significant
+
+All in all, hard to gain significant information in this correlation analysis.
+
 ------------------------------------------------------
 
 ## Data preparing and making training and test datasets
@@ -183,6 +197,8 @@ lda.arrows(lda.fit, myscale = 1)
 
 Discrimination analysis seem to fit the data quite well, as plot indicates. Rad variable (index of accessibility to radial highways) and also zn (proportion of residential land zoned for lots over 25,000 sq.ft.) seem to have biggest effect on the classification process. It looks like rad variable gives really good discrimination for higher crime towns. For the lower crim towns it's not that clear at all. In the picture it seems that rad variable separates higher crime towns from the rest. 
 
+Why then the radiation (index of accessibility to radial highways) has so significant effect. It seems not to be obvious that good connections would effect to crime rate that much and others won't (like lower status population, industrialization or distance from employment centers). Would it perhaps be that there is more density of population near highways or something like that, or more population near highways. Anyway *rad* seems to be good indicator for high crime rate. 
+
 ----------------------------------------------------
 
 *Exercise 6: Save the crime categories from the test set and then remove the categorical crime variable from the test dataset. Then predict the classes with the LDA model on the test data. Cross tabulate the results with the crime categories from the test set. Comment on the results. *
@@ -276,7 +292,7 @@ pairs(boston_scaled, col = km$cluster)
 
 ```
 
-We can see that perhaps *crim, indus, rad, tax, black* variables are best clustering variables, so let's see figures with only those variables. 
+We can see that perhaps *crim, indus, rad, tax, black* variables are best clustering variables (into two clusters), so let's see figures with only those variables. 
 
 ```{r}
 
@@ -288,7 +304,7 @@ pairs(boston_scaled[, a_1], col = km$cluster)
 
 ```
 
-Presented variables seems to have largest effect on the clustering as in the plot we can see good separation between the black and pink groups. 
+Presented variables seems to have largest effect on the clustering (into two clusers) as in the plot we can see good separation between the black and pink groups. 
 
 Next, we draw few plot more where one can see these significant variable values by clusters:
 
@@ -309,7 +325,7 @@ boxplot(boston_scaled$crim ~ km$cluster, main = "Crim by clusters")
 
 ```
 
-Perhaps one would not become wiser on looking drawn boxplots because many of the picked significant clustering variables has just few instances by cluster (e.g. crim, indus tax), so one can critisize the separating power here by just one variable. But at least we had more some nice pictures here.  
+Perhaps one would not become wiser on looking drawn boxplots because many of the picked significant clustering variables has just few instances by cluster (e.g. *crim*, *indus*, *tax*), so one can critisize the separating power here by just one variable. But at least we had more some nice pictures here.  
 
 ----------------------------------------------------
 
@@ -354,7 +370,7 @@ lda.arrows(lda.fit_2, myscale = 1)
 
 ```
 
-It seems clear that chas and rad variables are most influencial linear separators for the clusters. 
+It seems clear that *chas* and *rad* variables are most influencial linear separators for the five clusters. *Rad* we handled before, it would seem that the highway accessibility makes some difference and separates towns. *Chas* is indicating that the riverside towns are significantly different than the non-riverside towns.
 
 ----------------------------------------------------
 
