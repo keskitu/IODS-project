@@ -1,5 +1,5 @@
 # Tuomas Keski-Kuha, 25.11.2021
-# Week4 data wrangling exercise 
+# Week4 (and week5) data wrangling exercise 
 
 # data from http://s3.amazonaws.com/assets.datacamp.com
 # /production/course_2218/datasets/
@@ -7,6 +7,30 @@
 # Metadata: http://hdr.undp.org/en/content/
 # human-development-index-hdi
 # ---------------------------------------------
+
+#The human data originates from the United Nations  
+#Development Programme. See their 
+#data page (http://hdr.undp.org/en/content/human-
+#development-index-hdi)  for more information. 
+#For a nice overview see also the calculating 
+#the human development indices pdf 
+# (http://hdr.undp.org/sites/default/files/
+#hdr2015_technical_notes.pdf).
+
+#In the data we have countries and their 
+#ranking based on Human Development Index (*HDI*) 
+#and Gender Inequality Index (*GII*). Both of 
+#them are aggregated indexes constructed from 
+#other measures.
+
+# in the data there's qualities of the countries 
+# which should affect to for example HDI and GII ranks
+# and also to GNI (gross national income)
+
+# here (https://raw.githubusercontent.com/
+# TuomoNieminen/Helsinki-Open-Data-Science
+# /master/datasets/human_meta.txt)
+# you can get more information on the data
 
 # Access the some libraries
 library(dplyr)
@@ -76,29 +100,10 @@ str(human)
 # print out summaries of the variables
 summary(human)
 
-#The human data originates from the United Nations  
-#Development Programme. See their 
-#data page (http://hdr.undp.org/en/content/human-
-#development-index-hdi)  for more information. 
-#For a nice overview see also the calculating 
-#the human development indices pdf 
-# (http://hdr.undp.org/sites/default/files/
-#hdr2015_technical_notes.pdf).
 
-#In the data we have countries and their 
-#ranking based on Human Development Index (*HDI*) 
-#and Gender Inequality Index (*GII*). Both of 
-#them are aggregated indexes constructed from 
-#other measures.
 
-# in the data there's qualities of the countries 
-# which should affect to for example HDI and GII ranks
-# and also to GNI (gross national income)
-
-# here (https://raw.githubusercontent.com/
-# TuomoNieminen/Helsinki-Open-Data-Science
-# /master/datasets/human_meta.txt)
-# you can get more information on the data
+# Tuomas Keski-Kuha, 5.12.2021
+# week5 data wrangling exercise
 
 ###################################
 # Week 5 DATA WRANGLING EXERCISES #
