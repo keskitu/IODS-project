@@ -1,6 +1,8 @@
 ---
-title: "About the project"
+title: "Intro"
 ---
+
+# Intro
 
 *Tuomas Keski-Kuha 6.11.2021*
 

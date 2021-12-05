@@ -1,5 +1,5 @@
 ---
-title: "IODS course project"
+title: "Introduction to open data science - course project"
 author: "Tuomas Keski-Kuha"
 output:
   html_document:
@@ -13,8 +13,6 @@ output:
 ---
 
 ***
-
-# Introduction to Open Data Science - Course Project
 
 ```{r child = "chapter1.Rmd"}
 # This will include Chapter 1 (that is updated in its own file) in the document.
