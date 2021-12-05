@@ -118,6 +118,30 @@ summary(boston_scaled)
 
 We can see now that all the variables have negative and positive values around zero. 
 
+```{r}
+
+# perform principal component analysis (with the SVD method)
+pca_boston <- prcomp(boston_scaled)
+
+# define summaries so that we can compute real values of PC1 and PC2 (used for biplots) for both analysis made std and non std
+
+s <- summary(pca_boston)
+# rounded percentages of variance captured by each PC
+
+pca_pr <- round(100*s$importance[2,], digits = 1)
+
+# create object pc_lab to be used as axis labels
+pc_lab <- paste0(names(pca_pr), " (", pca_pr, "%)")
+
+# draw biplots of the principal component representation and the original variables both for non standardized data and standardized
+
+biplot(pca_boston, cex = c(0.8, 1), col = c("grey40", "deeppink2"), xlab = pc_lab[1], ylab = pc_lab[2])
+
+
+```
+
+
+
 In the following section we create a new categorical quantile variable from *crim* variable, so that the new variable has labels *low, med_low, med_high, high* depending the scaled *crim* variable, and all the new variables have 25 % of the data. 
 
 ```{r}
@@ -273,7 +297,7 @@ set.seed(123)
 k_max <- 10
 
 # calculate the total within sum of squares
-twcss <- sapply(1:k_max, function(k){kmeans(Boston, k)$tot.withinss})
+twcss <- sapply(1:k_max, function(k){kmeans(boston_scaled, k)$tot.withinss})
 
 # visualize the results
 qplot(x = 1:k_max, y = twcss, geom = 'line')

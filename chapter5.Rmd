@@ -1,0 +1,355 @@
+---
+title: "Dimensionality reduction techniques"
+---
+
+# Dimensionality reduction techniques
+
+*Tuomas Keski-Kuha 2.12.2021*
+
+------------------------------------------------------
+
+## Data exploration and finding relations between variables
+
+----------------------------------------------------
+
+*Exercise 1: Show a graphical overview of the data and show summaries of the variables in the data. Describe and interpret the outputs, commenting on the distributions of the variables and the relationships between them.*
+
+----------------------------------------------------
+
+The human data originates from the United Nations Development Programme. See their [data page](http://hdr.undp.org/en/content/human-development-index-hdi)  for more information. For a nice overview see also the calculating [the human development indices pdf](http://hdr.undp.org/sites/default/files/hdr2015_technical_notes.pdf).
+
+In the data we have countries and their ranking based on Human Development Index (*HDI*) and Gender Inequality Index (*GII*). Both of them are aggregated indexes constructed from other measures. In addition to these indexes there are several other variables. In analysis below we use mainly variables which are explained [here](https://raw.githubusercontent.com/TuomoNieminen/Helsinki-Open-Data-Science/master/datasets/human_meta.txt). Few words about main indexes: 
+
+- *HDI*: tries to capture population's health, knowledge and standard of living (wealth). The HDI was created to emphasize that people and their capabilities should be the ultimate criteria for assessing the development of a country, not economic growth alone. 
+- *GII*: tries to capture population's health, empowerment, and labour market situation differences between sexes. The *GII* sheds new light on the position of women in 162 countries; it yields insights in gender gaps in major areas of human development. 
+
+In the following we explore the data with only limited number of variables (numerical variables only). 
+
+```{r}
+# access a few libraries just in case: 
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(corrplot)
+library(GGally)
+library(reshape2)
+library(plotly)
+
+# read the human data
+#human <- read.table("http://s3.amazonaws.com/assets.datacamp.com/production/course_2218/datasets/human2.txt", sep  =",", header = T)
+
+# set the working directory to iods project folder
+setwd("c:/Tuomas/Opiskelu/Open Data Science/IODS-project")
+
+# read human from data wrangling exercise output
+human <- read.csv(file = "data/human.csv", 
+                      stringsAsFactors = FALSE)
+
+# add countries as rownames
+rownames(human) <- human$X
+
+# remove the first variable which is the country
+human <- human[, -1]
+
+str(human)
+
+# look at the structure of human
+str(human)
+
+# print out summaries of the variables
+summary(human)
+
+# let's draw ggpairs -plot to see an overview of the data
+
+ggpairs(human, lower = list(combo = wrap("facethist", bins = 20)))
+
+# compute the correlation matrix and visualize it with corrplot
+cor(human) %>% corrplot
+
+```
+
+We see from plots that most of the variables are quite nicely distributed (normally), but there are exeptions like *GNI* (gross national income per capita) and *Mat.Mor* (maternal mortality ratio). It indicates that wealth and health differences are very significant between countries. 
+
+There are very stong negative and positive correlations between variables. Couple of correlations seems to have straightforward explanations like (Life expectancy between years in schooling and LIfe expectancy between maternal mortality). Let's note the following: 
+
+- *GNI* has significant correlations between almost all of the variables except the variables which are *GII* variables (except educational differences). Seems reasonable that *GNI* has positive correlations between *Edu.Exp* (expected years of schooling) and *Life.Exp* (Life expectancy at birth). It has also quite logically negative correlations with *Mat.Mor* and *Ado.Birth* (adolescence birth rate, perhaps measures knowledge in general and also inequality between sexes)
+- No correlation between adolescent birth rate and women in power, which seems to be a surprise. Actually women in power (*Parli.F*) has surprisingly weak correlations between other variables, even educational differences between sexes. Also labour differences between sexes are not correlated heavily between other variables. Almost all other variables have quite significant correlations between other variables actually. 
+
+------------------------------------------------------
+
+## Principal Component Analysis (PCA)
+
+----------------------------------------------------
+
+*Exercise 2: Perform principal component analysis (PCA) on the not standardized human data. Show the variability captured by the principal components. Draw a biplot displaying the observations by the first two principal components (PC1 coordinate in x-axis, PC2 coordinate in y-axis), along with arrows representing the original variables.*
+
+----------------------------------------------------
+
+Principal Component Analysis (PCA) can be performed by two sightly different matrix decomposition methods from linear algebra: the Eigenvalue Decomposition and the Singular Value Decomposition (SVD).
+
+Both methods quite literally decompose a data matrix into a product of smaller matrices, which let's us extract the underlying principal components. This makes it possible to approximate a lower dimensional representation of the data by choosing only a few principal components.
+
+```{r}
+# perform principal component analysis (with the SVD method)
+pca_human <- prcomp(human)
+
+# draw a biplot of the principal component representation and the original variables
+biplot(pca_human, choices = 1:2, cex = c(0.8, 1), col = c("grey40", "deeppink2"))
+
+```
+
+Here the results are dominated by *GNI* which has very strong absolute variability, because data was not standardized and *GNI* values are far different than other variables (absolute differences are so large). Standardization seems like a good plan.  
+
+----------------------------------------------------
+
+*Exercise 3: Standardize the variables in the human data and repeat the above analysis. Interpret the results of both analysis (with and without standardizing). Are the results different? Why or why not? Include captions (brief descriptions) in your plots where you describe the results by using not just your variable names, but the actual phenomenons they relate to.*
+
+----------------------------------------------------
+
+```{r}
+# standardize the variables
+human_std <- scale(human)
+
+# perform principal component analysis to the std. data (with the SVD method)
+pca_human_std <- prcomp(human_std)
+
+# define summaries so that we can compute real values of PC1 and PC2 (used for biplots) for both analysis made std and non std
+
+s <- summary(pca_human)
+
+s_std <- summary(pca_human_std)
+
+# rounded percentages of variance captured by each PC
+
+pca_pr <- round(100*s$importance[2,], digits = 1)
+
+pca_pr_std <- round(100*s_std$importance[2,], digits = 1) 
+
+# create object pc_lab to be used as axis labels
+pc_lab <- paste0(names(pca_pr), " (", pca_pr, "%)")
+
+pc_lab_std <- paste0(names(pca_pr_std), " (", pca_pr_std, "%)")
+
+# draw biplots of the principal component representation and the original variables both for non standardized data and standardized
+
+biplot(pca_human, main = "PDA on non standardized data", cex = c(0.8, 1), col = c("grey40", "deeppink2"), xlab = pc_lab[1], ylab = pc_lab[2])
+
+biplot(pca_human_std, cex = c(0.8, 1), col = c("grey40", "deeppink2"), xlab = pc_lab_std[1], ylab = pc_lab_std[2], main = "PDA on standardized data")
+
+```
+
+Standardazing seems to make PDA model more effective. There are clear direction to the arrows for the variables. The first PDA model on the non standardized had only one explanatory variable on the *PD1* which was *GII* and all others explained the rest of the data variability (*PD1* explained 100 % of the variability in the country data). So the latter plot is completely different than the previous as in the arrows and the values of *PC1* and *PC2* (*PD1* explains 53,6 % and *PD2* 16,2 % of the variability in the data). Also the counties are far more evenly spread on the plot, as in the non std. analysis there the most of the countries were on the top right and what the model did was separate rich countries from the rest, and picked some very poor countries to the low right. 
+
+On the lengths of the arrows (standard deviation of variable) the standardization can be seen really nicely as in the latter the standard deviation is one for all of the variables, so all arrows have almost same length. 
+
+It's hard to say which is not different with these two plots. *GNI* arrow can be seen in both and some same very rich countries are pointing out in the both plots (like traditional oil countries Qatar, Kuwait, United Arabic Emirates).
+
+----------------------------------------------------
+
+*Exercise 4: Give your personal interpretations of the first two principal component dimensions based on the biplot drawn after PCA on the standardized human data.*
+
+----------------------------------------------------
+
+It looks like that health, wealth and knowledge differences between countries are explained by PC1 (variables like *GII*, *Life.Exp* and *Mat.Mor*). The rest of the variability in the data is explained by gender based factors like labour force differences (*Labo.FM*) and women in power (*Parli.F*). The independency between these gender based variables and others can be easily seen in the plot above as arrows are approximately non-parallel (somewhat 90 agrees between them). 
+
+Also the correlations between "PC1" variables (positive and negative) are really well presented here (as arrows are pointing same direction or straight to the opposite), and these variables have strong correlation between each other, and behave as a group regarding the variability between countries. 
+
+In the plot rich countries are on the left and poor on the right. In the top are more equal between sexes countries (Rwanda is interesting outlier, don't know if the women are more involved in labour force as it's quite underdeveloped country due to its dark history. Perhaps there is more agriculture where also women are more involved) and counties in the bottom are more inequal. 
+
+------------------------------------------------------
+
+## Multiple Correspondence Analysis (MCA)
+
+----------------------------------------------------
+
+*Exercise 5: Load the tea dataset from the package Factominer. Explore the data briefly: look at the structure and the dimensions of the data and visualize it. Then do Multiple Correspondence Analysis on the tea data (or to a certain columns of the data, it’s up to you). Interpret the results of the MCA and draw at least the variable biplot of the analysis. You can also explore other plotting options for MCA. Comment on the output of the plots.*
+
+----------------------------------------------------
+
+### MCA on the tea data with **all** variables
+
+----------------------------------------------------
+
+Multiple Correspondence Analysis (MCA) is a method to analyze qualitative data and it is an extension of Correspondence analysis (CA). MCA can be used to detect patterns or structure in the data as well as in dimension reduction. In other words it tries to pack information from the data to some categorical variables, so that we can in a way group individual observations. 
+
+Tea-dataset is a data frame with 300 rows and 36 columns. Rows represent the individuals, columns represent the different questions. There was quite a lot ready-made and handy R-code for plots in the web and I used them in analysis for MCA. 
+
+```{r}
+
+# access a FactoMineR package and also factoextra: 
+library(FactoMineR)
+library(factoextra)
+
+##read tea-data
+data("tea")
+
+# look at the structure of tea
+str(tea)
+
+# visualize the tea data in three plots
+gather(tea[, 1:12]) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free") + geom_bar() + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 6))
+
+gather(tea[, 13:24]) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free") + geom_bar() + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 6))
+
+gather(tea[, 25:36]) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free") + geom_bar() + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 6))
+
+
+```
+
+We can see that all but one (age) are categorical variables, and for them is suitable to just count cases in the plots. 
+
+In MCA analysis soon to follow, the first 18 questions in the Tea-data are active ones, the 19th is a supplementary quantitative variable (the age) and the last variables are supplementary categorical variables. Supplementary variables are not actually used in following MCA, so if we apply all variables to MCA it means just the active variables (the first 18).
+
+Let's first apply MCA to the whole tea-data. For that we use code that was found in the web for this tea-data analysis.
+
+```{r}
+
+# let's run MCA first on all of the categorical variables and then decide which variables we uses in further analysis, most effective variables seen in variables representation for two first dimensions of MCA. Don't use here the graphs = FALSE, so we'll get graphs from the analysis
+res.mca=MCA(tea,quanti.sup=19,quali.sup=20:36)
+
+```
+
+Active variables are red and supplementary variables green ones in the first plot above. In the second MCA factor map plot are plotted individuals (all the data) into MCA model dimensions 1 and 2. In factor maps the distance between any row points (individuals) or column points (variable vales) gives a measure of their similarity (or dissimilarity). Row points with similar profile are closed on the factor map. The same holds true for column points.
+
+Comments on factor maps of two first dimensions: 
+
+- Few variable values form "group" for more similar individuals (*tea shop, unpackaged, p_upscale*). It can be seen in the factor maps that those far up categorical values "strech" individuals towards them. 
+- There are also variable values which gather in the right in the picture (*tearoom, other* etc.) which seem to pull observations from the origo towards them to make a loose group of more similar individuals
+- There is lots of individuals near the origo, and form a third group. 
+
+Variables representation gives correlations of variables to Dim 1 and Dim 2) *where, how, price* are the most relevant for the first two dimensions. 
+
+There could be more variable values which separate individuals in higher dimensions also, but these first dimension explain more of the variation in the data.We can pick also the variation that each dimension retains and see that in the plot: 
+
+```{r}
+# To visualize the percentages of inertia (variation) explained by each MCA dimensions, use the function fviz_eig() or fviz_screeplot() [factoextra package]:
+fviz_screeplot(res.mca, addlabels = TRUE, ylim = c(0, 11))
+
+```
+
+In this plot we can see that the first two are more relevant than others, but explain only ~18 % of the variation. 
+
+We can also calculate the contributions from categories (variable values) for the first three dimensions and plot the whole variable set to the heatmap-kind-of-plot where contributions can be easily seen. 
+
+```{r}
+
+# Let's calculate also contributions to 
+# Contributions of variables to DIM 1
+fviz_contrib(res.mca, choice = "var", axes = 1, top = 10)
+
+# Contributions of variables to DIM 2
+fviz_contrib(res.mca, choice = "var", axes = 2, top = 10)
+
+# Contributions of variables to DIM 2
+fviz_contrib(res.mca, choice = "var", axes = 3, top = 10)
+
+fviz_mca_var(res.mca, col.var = "contrib",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
+             repel = TRUE, # avoid text overlapping (slow)
+             ggtheme = theme_minimal()
+             )
+
+```
+
+Let's pick the most significant variables from Variable categories plot for dimensions 1 and 2 for next MCA analysis. Those which are near the origo are not significant to first two dimensions. Let's also pick some variables which are significant for dimension 3.
+
+-----------------------------------------------
+
+### MCA on the tea data with **selected** variables
+
+-----------------------------------------------
+
+Perhaps the whole analysis (if want to focus on the two first dimensions) would be just as good with just three variables: *price, where, how*, but let's keep some more *tearoom, friends, resto, Tea, How* in the second analysis below.  
+
+```{r}
+
+# We pick the most relevant from the analysis for the whole data and do the MCA again with those variab
+
+keep_columns <- c("where", "tearoom", "friends", "how", "price", "Tea", "resto", "How")
+
+# select the 'keep_columns' to create a new dataset
+tea_time <- tea[, keep_columns]
+
+# visualize the dataset
+gather(tea_time) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free") + geom_bar() + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+
+# multiple correspondence analysis on tea_time dataset, so it's not a whole data
+mca <- MCA(tea_time, graph = TRUE)
+
+# summary of the model
+summary(mca)
+
+
+```
+
+From the summary Categorical variables, we can see the squared correlations between each variable and the dimensions. If the value is close to one it indicates a strong link with the variable and dimension. Here we can see that most important for the dimensions: 
+
+- Dim 1 are *where, how, price, tearoom* variables
+- Dim 2 are *where, how, price* variables
+- Dim 3 are *Tea, How* variables
+
+These were the quite same variables which could be seen in the previous MCA model, where all variables were used. 
+
+```{r}
+# To visualize the percentages of inertia (variation) explained by each MCA dimensions, use the function fviz_eig() or fviz_screeplot() [factoextra package]:
+fviz_screeplot(mca, addlabels = TRUE, ylim = c(0, 15))
+
+```
+
+In this plot we can see that the first two are more relevant than others. Still they explain only ~25 % of the variation. 
+
+Let's plot the results to the factor map where we can see variables by different colous. In the factor map we can see how similar (small distance) or dissimilar (big distance) these categories are. Also in the second factor map we can see the contributions to first two dimensions: 
+
+```{r}
+# visualize MCA
+plot(mca, invisible=c("ind"), habillage = "quali")
+
+#heat map for contributions:
+fviz_mca_var(mca, col.var = "contrib",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
+             repel = TRUE, # avoid text overlapping (slow)
+             ggtheme = theme_minimal()
+             )
+
+```
+
+Comments: 
+
+- As in the previous analysis *where, how, price* and only those three values (*tea shop, unpackaged, p_upscale*) form a more similar group. 
+- *tearoom, chain store+tea shop, other* seem to also draw individuals to the right and form a loose group.
+- It is interesting that *How = other* does not contribute to the first two dimensions, but perhaps it's due to the fact that it has just 9 individual observations, so it won't effect to large amount of individuals in the analysis. Another explanation could be that it has greater significance in higher dimensions and this is true (summaries Categorical variables table) so it seems that it's not correlated so heavily with other variables which are significant in the first two dimensions. 
+
+```{r}
+#let's look at How-variable values: 
+summary(tea_time$How)
+
+```
+
+All in all, I think that in the end for two first dimensions there can be seen three groups (with straight forward discrimination and some might challenge these conclusions): 
+
+- there are **"high-end"** tea drinkers, who all more or less drinks expensive tea bought from tea shop (*price = upscale*, *how = unpackaged*, *where = tea shop*), but they perhaps drink tea in tearooms and also somewhere else.
+- there are **"tea room"** tea drinkers, who buys tea from tea shops and also from chain stores, but they especially like to drink tea in the tearoom.
+- **"regular"** tea drinkers who use not expensive tea bag and buy it from chain store and are not that interested how it's packaged. They do not drink tea that much in tearooms. 
+
+We can also plot an extra plot where we can see the factor maps for some key variables. Plot draws an confidence ellipses for variable values (also individuals can be seen here and their answers also to there questions) which indicate the statistical significance of variable value difference. If ellipses cross, it it indicates that there is no statistical difference between variable values. On the other hand if ellipses are far from each other, then variable values statistically really differ on each other. 
+
+
+```{r}
+fviz_ellipses(mca, c("where", "how", "price", "How"),
+              geom = "point")
+
+```
+
+Few comments: 
+
+- *how and where* variables form quite distinct groups for all variable values and they actually look really similar to other so these values seem strongly correlated
+- *price* variable seems also correlated to some extent to *how* and *where* variables, but for *price* only *p_upscale* variable seem to be different than the rest of the values
+- *How* variable is more uncertain. There seem to be some differences, but differences in the picture are quite small after all. Value *other* is distinct but really uncertain perhaps due to small number of observation. 
+
+-----------------------------------------------------
+
+## Comments on the exercises and learning
+
+-----------------------------------------------------
+
+This week was really fun and I took quite a bit of liberties doing the exercises. Of course understanding is limited for methods, but there was good material in the web. 
