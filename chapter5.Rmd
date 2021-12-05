@@ -164,15 +164,12 @@ In the plot rich countries are on the left and poor on the right. In the top are
 
 *Exercise 5: Load the tea dataset from the package Factominer. Explore the data briefly: look at the structure and the dimensions of the data and visualize it. Then do Multiple Correspondence Analysis on the tea data (or to a certain columns of the data, it’s up to you). Interpret the results of the MCA and draw at least the variable biplot of the analysis. You can also explore other plotting options for MCA. Comment on the output of the plots.*
 
-----------------------------------------------------
+Multiple Correspondence Analysis (MCA) is a method to analyze qualitative data and it is an extension of Correspondence analysis (CA). MCA can be used to detect patterns or structure in the data as well as in dimension reduction. In other words it tries to pack information from the data to some categorical variables (reduce variables to dimension variables), so that we can in a way group individual observations. 
 
-### MCA on the tea data with **all** variables
 
-----------------------------------------------------
+### Tea-data
 
-Multiple Correspondence Analysis (MCA) is a method to analyze qualitative data and it is an extension of Correspondence analysis (CA). MCA can be used to detect patterns or structure in the data as well as in dimension reduction. In other words it tries to pack information from the data to some categorical variables, so that we can in a way group individual observations. 
-
-Tea-dataset is a data frame with 300 rows and 36 columns. Rows represent the individuals, columns represent the different questions. There was quite a lot ready-made and handy R-code for plots in the web and I used them in analysis for MCA. 
+The data used here concern a questionnaire on tea. We asked to 300 individuals how they drink tea (18 questions), what are their product's perception (12 questions) and some personal details (4 questions). 
 
 ```{r}
 
@@ -198,9 +195,20 @@ gather(tea[, 25:36]) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free")
 
 We can see that all but one (age) are categorical variables, and for them is suitable to just count cases in the plots. 
 
-In MCA analysis soon to follow, the first 18 questions in the Tea-data are active ones, the 19th is a supplementary quantitative variable (the age) and the last variables are supplementary categorical variables. Supplementary variables are not actually used in following MCA, so if we apply all variables to MCA it means just the active variables (the first 18).
+In the following sections we do **two** MCAs (this is not exactly what was asked): 
 
-Let's first apply MCA to the whole tea-data. For that we use code that was found in the web for this tea-data analysis.
+- With **all** variables in the data
+- With **selected** variable in the data
+
+There was quite a lot ready-made and handy R-code for plots in the web and I used them without any hesitation in analysis for MCA.
+
+----------------------------------------------------
+
+### MCA on the tea data with **all** variables
+
+----------------------------------------------------
+
+In MCA analysis soon to follow, the first 18 questions in the Tea-data are active ones, the 19th is a supplementary quantitative variable (the age) and the last variables are supplementary categorical variables. Supplementary variables are not actually used in following MCA, so if we apply all variables to MCA it means just the active variables (the first 18).
 
 ```{r}
 
@@ -243,6 +251,7 @@ fviz_contrib(res.mca, choice = "var", axes = 2, top = 10)
 # Contributions of variables to DIM 2
 fviz_contrib(res.mca, choice = "var", axes = 3, top = 10)
 
+# Heat-map for contribtions of the first two dimensions
 fviz_mca_var(res.mca, col.var = "contrib",
              gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
              repel = TRUE, # avoid text overlapping (slow)
@@ -290,6 +299,8 @@ From the summary Categorical variables, we can see the squared correlations betw
 
 These were the quite same variables which could be seen in the previous MCA model, where all variables were used. 
 
+In the next plot we see percentages of the variance in the data that dimension variables retain in the analysis.
+
 ```{r}
 # To visualize the percentages of inertia (variation) explained by each MCA dimensions, use the function fviz_eig() or fviz_screeplot() [factoextra package]:
 fviz_screeplot(mca, addlabels = TRUE, ylim = c(0, 15))
@@ -304,7 +315,7 @@ Let's plot the results to the factor map where we can see variables by different
 # visualize MCA
 plot(mca, invisible=c("ind"), habillage = "quali")
 
-#heat map for contributions:
+# heat map for contributions:
 fviz_mca_var(mca, col.var = "contrib",
              gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
              repel = TRUE, # avoid text overlapping (slow)
@@ -331,8 +342,7 @@ All in all, I think that in the end for two first dimensions there can be seen t
 - there are **"tea room"** tea drinkers, who buys tea from tea shops and also from chain stores, but they especially like to drink tea in the tearoom.
 - **"regular"** tea drinkers who use not expensive tea bag and buy it from chain store and are not that interested how it's packaged. They do not drink tea that much in tearooms. 
 
-We can also plot an extra plot where we can see the factor maps for some key variables. Plot draws an confidence ellipses for variable values (also individuals can be seen here and their answers also to there questions) which indicate the statistical significance of variable value difference. If ellipses cross, it it indicates that there is no statistical difference between variable values. On the other hand if ellipses are far from each other, then variable values statistically really differ on each other. 
-
+We can also plot an extra plot where we can see the factor maps for some key variables. Plot draws an confidence ellipses for variable values (also individuals can be seen here and their answers also to there questions) which indicate the statistical significance of variable value difference. If ellipses cross, it indicates that there is no statistical difference between variable values. On the other hand if ellipses are far from each other, then variable values statistically really differ on each other. 
 
 ```{r}
 fviz_ellipses(mca, c("where", "how", "price", "How"),
@@ -352,4 +362,4 @@ Few comments:
 
 -----------------------------------------------------
 
-This week was really fun and I took quite a bit of liberties doing the exercises. Of course understanding is limited for methods, but there was good material in the web. 
+This week was really fun and I took quite a bit of liberties doing the exercises (especially with MCA part). Of course understanding is limited for methods, but there was helpful material in the web. 
