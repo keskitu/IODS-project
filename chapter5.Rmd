@@ -358,7 +358,7 @@ Few comments:
 
 -----------------------------------------------------
 
-## Comments on the exercises and learning
+### Comments on the exercises and learning
 
 -----------------------------------------------------
 
