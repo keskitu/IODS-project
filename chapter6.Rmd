@@ -4,7 +4,7 @@ title: "Analysis of longitudinal data"
 
 # Analysis of longitudinal data
 
-*Tuomas Keski-Kuha 5.12.2021*
+*Tuomas Keski-Kuha 11.12.2021*
 
 ```{r}
 # access libraries: 
@@ -19,8 +19,6 @@ library(tidyverse)
 library(rstatix)
 library(ggpubr)
 library(lme4)
-
-install.packages("lme4")
 
 ```
 
@@ -41,6 +39,10 @@ install.packages("lme4")
 
 Graphical displays of data are almost always useful for exposing patterns in the data, particularly when these are unexpected; this might be of great help in suggesting which class of models might be most sensibly applied in the later more formal analysis.
 
+In the following we have the RATS data which contains rat weight developments in different diets. In the data we have three groups of individual rats that were put on a different diets, and each rat's (16 rats in total) weight in grams was measured repeatedly over a 9-week period. 
+
+Goal of the study was to determine does these diets have different responses on the rat growth. Let's first load the data (long form data) and let's draw a plot where all the information can be seen.  
+
 ```{r}
 
 # load the data
@@ -57,23 +59,28 @@ RATSL <- within(RATSL, {
 #  read original RATS data
 RATS <- read.table("https://raw.githubusercontent.com/KimmoVehkalahti/MABS/master/Examples/data/rats.txt", sep  ="\t", header = T)
 
+# changing categorical variables to factors
 RATS <- within(RATS, {
   ID <- factor(ID)
   Group <- factor(Group)
 })
 
-
-# Plotting the RATSL data
-p1 <- ggplot(RATSL, aes(x = Time, y = Weight, linetype = ID))
-p2 <- p1 + geom_line() + scale_linetype_manual(values = rep(1:10, times=4))
-p3 <- p2 + facet_grid(. ~ Group, labeller = label_both)
-p4 <- p3 + theme_bw() + theme(legend.position = "none")
-p5 <- p4 + theme(panel.grid.minor.y = element_blank())
-p6 <- p5 + scale_y_continuous(limits = c(min(RATSL$Weight), max(RATSL$Weight)))
-p6
-
+# draw a plot of the rat data
+ggplot(RATSL, aes(x = Time, y = Weight, group = ID)) +
+  geom_line(aes(linetype = Group)) +
+  scale_x_continuous(name = "Time (days)", breaks = seq(0, 60, 10)) +
+  scale_y_continuous(name = "Weight (grams)") +
+  theme(legend.position = "top")
 ```
 
+Comments: 
+
+- First of all starting weights (baseline) are quite different on different rat groups. Group 2 and 3 rats are much heavier than group 1 rats at the start and on the course of the study. 
+- In groups 2 and 3 there are fewer rats (4 rats each) than in the first group (8 rats). Also the variety of the baselines for 2 and 3 group rats is larger than in rats in the group 1. 
+- It looks like weights of almost all the rats are growing during the study period. 
+- At a first glance group 1 rat development seems more stable than in the other groups, where weights seem to grow more rapidly and looks. 
+
+Let's standardize all the rat weights in the next part and let's see if there could be found more variance between the groups. 
 
 ```{r}
 # Standardise the scores for RATS
@@ -91,13 +98,15 @@ p4 <- p3 + theme_bw() + theme(legend.position = "none")
 p5 <- p4 + theme(panel.grid.minor.y = element_blank())
 p6 <- p5 + scale_y_continuous(name = "standardized rats")
 p6
-
-ggplot(RATSL, aes(x = Time, y = Weight, group = ID)) +
-  geom_line(aes(linetype = Group)) +
-  scale_x_continuous(name = "Time (days)", breaks = seq(0, 60, 10)) +
-  scale_y_continuous(name = "Weight (grams)") +
-  theme(legend.position = "top")
 ```
+
+Remarks: 
+
+- All the group 1 rats are packed so tightly so it's not easy to see the differences. Their growth patterns seems to be more similar than in the other groups. 
+- In group 2 there is one rat which weight much more than others in that group. Also in group 2 there is one rat which development is quite different than the others (it does not grow that fast than the rest). Actully that rat is really the different one in that group for its growth pattern. 
+- In group 3 there's one rat which is growing actually faster than the others.
+
+In the next chapter we calculate summary measures for each group and compare differences between groups. 
 
 ----------------------------------------------------
 
@@ -105,6 +114,7 @@ ggplot(RATSL, aes(x = Time, y = Weight, group = ID)) +
 
 ----------------------------------------------------
 
+In the first plot we draw the mean weights and standard deviations around the mean (mean +/- standard deviation).
 
 ```{r}
 
@@ -121,8 +131,8 @@ RATSS <- RATSL %>%
 
 p1 <- ggplot(RATSS, aes(x = Time, y = mean, linetype = Group, shape = Group))
 p2 <- p1 + geom_line() + scale_linetype_manual(values = c(1,2,3))
-p3 <- p2 + geom_point(size=2) + scale_shape_manual(values = c(1,2,3))
-p4 <- p3 + geom_errorbar(aes(ymin=mean-se, ymax=mean+se, linetype="1"), width=1)
+p3 <- p2 + geom_point(size=3) + scale_shape_manual(values = c(1,2,3))
+p4 <- p3 + geom_errorbar(aes(ymin=mean-se, ymax=mean+se, linetype="1"), width=1.5)
 p5 <- p4 + theme_bw() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
 p6 <- p5 + theme(legend.position = c(0.9,0.45))
 p7 <- p6 + scale_y_continuous(name = "mean(Weight) +/- se(Weight)")
@@ -131,56 +141,95 @@ p7
 
 ```
 
-```{r}
-# Create a summary data by group and subject with mean as the summary variable 
+In the plot above: 
 
-RATSL8S <- RATSL %>%
+- Means of the groups seem to develop differently. Groups 2 and 3 seem to grow more rapidly than the group 1 if we look a the mean of the rat weights. 
+- Standard deviation around the mean is just telling that there are different weight rats more in groups 2 and 3. It's not that interesting and don't actually tell anything of the variance in growing pattern, if there's any in the groups. 
+
+Next we'll focus on the growth patterns of the rats. Let's calculate the growth percents of all rats at every measuring point and check if there's anything interesting there. After the growth percent calculation, we just study the means of growth percents (from all the measuring points) the groups and plot them into a boxplot.  
+
+```{r}
+
+# Let's use the wide data in which it's perhaps easier to calculate the growth percents
+
+RAT_g <- RATS
+
+# we need a loop (for columns, time points) for calculate the growth percents for all the rats and all
+for (i in 4:13) {
+  RAT_g[, i] = (RATS[, i]-RATS[, i-1])/RATS[, i-1]*100
+  
+}
+
+# let's drop the baseline (first weight)
+RAT_g <- RAT_g[, -3]
+
+# modify RAT_g to long data
+RAT_gL <- gather(RAT_g, key = WD, value = grow, -ID, -Group) %>%
+  mutate(Time = as.integer(substr(WD,3,4)))
+
+# Number of weeks, baseline (week 0) included
+n <- RAT_gL$Time %>% unique() %>% length()
+
+# Make a summary data:
+#RAT_gS <- RAT_gL %>%
+#  group_by(Group, Time) %>%
+#  summarise( mean=mean(grow), se=sd(grow)/sqrt(n)) %>%
+#  ungroup()
+
+# let's calculate the means of the growth percents for all individual rats
+RAT_gS1 <- RAT_gL %>%
   group_by(Group, ID) %>%
-  summarise( mean=mean(Weight) ) %>%
+  summarise( mean=mean(grow) ) %>%
   ungroup()
 
-# Draw a boxplot of the mean versus treatment
-ggplot(RATSL8S, aes(x = Group, y = mean)) +
+# plot the mean growth percents
+ggplot(RAT_gS1, aes(x = Group, y = mean)) +
   geom_boxplot() +
-  stat_summary(fun = "mean", geom = "point", shape=23, size=4, fill = "white") +
-  scale_y_continuous(name = "mean(bprs), Times 1-11")
-
-# Create a new data by filtering the outlier and adjust the ggplot code the draw the plot again with the new data
-RATSL8S1 <- RATSL8S %>%
-  filter(mean < 590)
-
-ggplot(RATSL8S1, aes(x = Group, y = mean)) +
-  geom_boxplot() +
-  stat_summary(fun = "mean", geom = "point", shape=23, size=4, fill = "white") +
-  scale_y_continuous(name = "mean(bprs), Times 1-11")
+  stat_summary(fun = "mean", geom = "point", shape=23, size=4, fill = "blue") +
+  scale_y_continuous(name = "mean(growth percent)")
 
 
 ```
 
+This plot shows perhaps something interesting in the data, but of course the variability in the group 1 is smaller initially because there's more rats in the group. But here we perhaps see that the mean of the group 2 is different than the other groups if we only focus on the growth pattern. But it's hard to make strong statements based only on these. Perhaps one could also compare growth percents for all time points separately. 
 
+Let's also look at some statistic calculations of the summary measured data. We take the individual rat baseline into linear model analysis to check how relevant factor it is. We'll also fi linear model without baseline as a predictor to see the difference. 
 
 ```{r}
 
-# Perform a three-sample t-test
-pwc <- RATSL8S1 %>%
-  pairwise_t_test(mean ~ Group, p.adjust.method = "bonferroni")
-pwc
+# Create a summary data by group and id with mean as the summary variable (ignoring baseline week 0).
+RATSL8S <- RATSL %>%
+  filter(Time > 0) %>%
+  group_by(Group, ID) %>%
+  summarise( mean=mean(Weight) ) %>%
+  ungroup()
 
 # Add the baseline from the original data as a new variable to the summary data
 RATSL8S2 <- RATSL8S %>%
   mutate(baseline = RATS$WD1)
 
 # Fit the linear model with the mean as the response 
-fit <- lm(mean ~ baseline + Group, data = RATSL8S2)
+fit_1 <- lm(mean ~ Group, data = RATSL8S2)
 
-summary(fit)
+summary(fit_1)
 
-# Compute the analysis of variance table for the fitted model with anova()
-anova(fit)
+# Fit the linear model with the mean as the response with baseline as predictor 
+fit_2 <- lm(mean ~ baseline + Group, data = RATSL8S2)
+
+summary(fit_2)
+
+# Compute the analysis of variance for the fitted models with anova()
+anova(fit_2, fit_1)
 
 
 ```
 
+From these analysis we can see that:
+
+- Without the baseline the group variable seem to be okay predictor for the means, but we can see from the residual standard errors that baseline is much better whem predicting mean. Standard error for baseline model is 10.62 and without it it's 36.66. But still the R-squared measure 0.93 for the model without baseline is not bad at all, so it catches also most of the variability in the data. 
+- Predicting mean value of individual rat means is highly correlated between baseline, which is reasonable from the data plots that we saw above (individual lines do not grow so fast or do not variate that much)
+- First model (without baseline predictor) also somewhat contains information of the base levels of rats as it's obvious that group levels are different from each other.
+- Analysis of the variation (variation is the variation of the residuals) shows also that baseline predictor model is significantly better than the other. RSS is the residual sum of squares.
 
 ----------------------------------------------------
 
