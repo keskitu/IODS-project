@@ -4,7 +4,7 @@ title: "Analysis of longitudinal data"
 
 # Analysis of longitudinal data
 
-*Tuomas Keski-Kuha 11.12.2021*
+*Tuomas Keski-Kuha 12.12.2021*
 
 ```{r}
 # access libraries: 
@@ -229,7 +229,7 @@ From these analysis we can see that:
 - Without the baseline the group variable seem to be okay predictor for the means, but we can see from the residual standard errors that baseline is much better whem predicting mean. Standard error for baseline model is 10.62 and without it it's 36.66. But still the R-squared measure 0.93 for the model without baseline is not bad at all, so it catches also most of the variability in the data. 
 - Predicting mean value of individual rat means is highly correlated between baseline, which is reasonable from the data plots that we saw above (individual lines do not grow so fast or do not variate that much)
 - First model (without baseline predictor) also somewhat contains information of the base levels of rats as it's obvious that group levels are different from each other.
-- Analysis of the variation (variation is the variation of the residuals) shows also that baseline predictor model is significantly better than the other. RSS is the residual sum of squares.
+- Analysis of the variation (variation is the variation of the residuals) shows also that baseline predictor model is significantly better than the other in its prediction power. RSS is the residual sum of squares.
 
 ----------------------------------------------------
 
@@ -241,9 +241,17 @@ From these analysis we can see that:
 
 ----------------------------------------------------
 
-In the BPRS data 40 male subjects were randomly assigned to one of two treatment groups and each subject was rated on the brief psychiatric rating scale (BPRS) measured before treatment began (week 0) and then at weekly intervals for eight weeks. The BPRS assesses the level of 18 symptom constructs such as hostility, suspiciousness, hallucinations and grandiosity; each of these is rated from one (not present) to seven (extremely severe). The scale is used to evaluate patients suspected of having schizophrenia.
+In this chapter we'll do several analyses *which all are* linear regression models as title suggests (Linear Mixed Effect Models), but with some added parameters and features. Aim is to have a better model for repetitive data than just basic linear regression, which assumes that all the observations are independent. Here are the four models that we'll apply (in the brackets we shorten the model name): 
 
-Let's load the data, take a glimpse, and draw a plot: 
+- (Basic) Linear regression model (LRM) 
+- Random random intercept model (RIM)
+- Random random intercept and random slope model (SLO)
+- Random intercepts and random slope model with interaction (INT)
+
+The data that we use is the BPRS data 40 male subjects were randomly assigned to one of two treatment groups and each subject was rated on the brief psychiatric rating scale (BPRS) measured before treatment began (week 0) and then at weekly intervals for eight weeks. The BPRS assesses the level of 18 symptom constructs such as hostility, suspiciousness, hallucinations and grandiosity; each of these is rated from one (not present) to seven (extremely severe). The scale is used to evaluate patients suspected of having schizophrenia.
+
+Let's load the BPRS data, take a glimpse, and draw a plot of it. 
+
 ```{r}
 
 # load the data
@@ -270,112 +278,212 @@ ggplot(BPRSL, aes(x = week, y = bprs, linetype = subject)) +
   scale_y_continuous(limits = c(min(BPRSL$bprs), max(BPRSL$bprs)))
 ```
 
+Comments of the data:
 
-### Linear regression model
+- Both of the treatment groups have 20 patients each.
+- Variability and the overall pattern seems quite similar for each group, peraps for treatment 2 there seems to be a bit more variability and one really high value patient the start. If we don't analyse the just the pattern, but the actual values, it would perhaps be good to drop that observation from the analysis. 
+- Also the starting level seems to be similar.  
 
-First, we try just a simple linear regression model on the BPRS-data with *bprs* as response and *week* and *treatment* as explanatory variables. Here we ignore the repeated-measures structure of the data, and assume that observations are all independent knowing that there is same subjects measured multiple times and these observations tend to correlate with each other as we measure same subject. 
+----------------------------------------------
+
+### Linear regression model (LRM)
+
+----------------------------------------------
+
+First, we try just a simple linear regression model (LRM) on the BPRS-data with *bprs* as response and *week* and *treatment* as explanatory variables. Here we ignore the repeated-measures structure of the data, and assume that observations are all independent knowing that there is same subjects measured multiple times and these observations tend to correlate with each other as we measure same subject. 
+
+The form of (LRM) with two explanatory variables (week (time) $T$ and treatment $X$) is 
+$$
+Y \sim \beta_0 + \beta_1 T + \beta_2 X + \epsilon
+$$
+Here the residual term $Y(t, x_i)-y_i$ (the difference between an observed and predicted value - also model error) is normally distributed random variable $\epsilon$ with zero mean and variance $\sigma^2$.
 
 ```{r}
 
 # create a regression model BPRS_reg
-BPRS_reg <- lm(bprs ~ week + treatment, data = BPRSL)
+BPRS_LRM <- lm(bprs ~ week + treatment, data = BPRSL)
 
 # print out a summary of the model
-summary(BPRS_reg)
+summary(BPRS_LRM)
+plot(BPRS_LRM, 1)
 
 ```
 
+Commentary: 
+
+- Results of the LRM fit don's seem to be that good, especially the R-squared measure seems pretty low here, so model don't capture the variation in the data that well (if you compare with the similar RATS analysis below for example). 
+- Still time variable is significant feature here, and has a significant effect (bprs is heavily going down during the study for the mean at least). And also the intercept value which can be seen as the baseline (constant in the linear regression model).
+- Treatment variable on the otherhand don't seem to have significance for the LRM. 
+- From the plot we can se that residuals seem to grow with the actual values (indicating non-linearity). That indicates that this model is perhaps not suitable.
 
 ----------------------------------------------------
 
-## Random intercept model
+### Random intercept model (RIM)
 
 ----------------------------------------------------
 
-The previous model assumes independence of the repeated measures of bprs, and this assumption is highly unlikely. So, now we will move on to consider both some more appropriate graphics and appropriate models.
+The previous model assumes independence of the repeated measures of bprs, and this assumption is highly unlikely. So, no we try something more suitable for repetitive type of study. 
 
-To begin the more formal analysis of the *BPRS* data, we will first fit the random intercept model for the same two explanatory variables: *week* and *treatment* Fitting a random intercept model allows the linear regression fit for each subject to differ in intercept from other subjects. So in this model it's possible to have different profiles wiht symptom development. 
+To begin the more formal analysis of the *BPRS* data, we will first fit the random intercept model (RIM) for the same two explanatory variables: *week* and *treatment* Fitting a random intercept model allows the linear regression fit for each subject to differ in intercept from other subjects. So in this model it's possible to have different profiles with symptom development.
 
+The form of (RIM) for the subject $i$ and at the time $t_j$ where $j$ represent the week 
+$$
+y_{ij} = (\beta_0 + u_i) + \beta_1 t_j + \beta_2 x_i + \epsilon_i
+$$
+Here the variance of each repeated measurement is ${Var}(y_{ij}) = {Var}(\epsilon_i + u_i) = \sigma^2+u_i^2$ (independent of time), where random effects
+
+- $\epsilon_i \sim N(0,\sigma^2)$ "normal" random effects.
+- $u_i \sim N(0,\sigma_u^2)$ is the random effect specific to the subject $i$.
+
+RIM kind of split the random effect in (LRM) to individual random effect which depends of the subject and the basic random effect.
+
+So let's fit this model next: 
 
 ```{r}
 
 # Create a random intercept model
-BPRS_rim <- lmer(bprs ~ week + treatment + (1 | subject), data = BPRSL, REML = FALSE)
+BPRS_RIM <- lmer(bprs ~ week + treatment + (1 | subject), data = BPRSL, REML = FALSE)
 
 # Print the summary of the model
-summary(BPRS_rim)
+summary(BPRS_RIM)
 
 ```
 
+Notes: 
+
+- Random effect standard deviance for RIM is not that small comparing with LRM, here variance in total is about 150 as it was 153 for LRM (LRM std. deviance 12.37 so the accuracy is not that amazing)
+- RIM model did not critically change the significances of the variables. So the treatment does not not matter in this analysis either. 
+
 ----------------------------------------------------
 
-### Random intercept and random slope model
+### Random intercept and random slope model (SLO)
 
 ----------------------------------------------------
 
-Now we can move on to fit the random intercept and random slope model to the data. Fitting a random intercept and random slope model allows the linear regression fits for each individual to differ in intercept but also in slope. This way it is possible to account for the individual differences in the *bprs* development profiles, but also the effect of time.
+Now we can move on to fit the random intercept and random slope model (SLO) to the data. Fitting a random intercept and random slope model allows the linear regression fits for each individual to differ in intercept but also in slope. This way it is possible to account for the individual differences in the *bprs* development profiles, but also the effect of time.
+
+The form of (SLO) for the subject $i$ and at the time $t_j$ where $j$ represent the week 
+$$
+y_{ij} = (\beta_0 + u_i) + (\beta_1+v_i) t_j + \beta_2 x_i + \epsilon_{ij}
+$$
+Here the variance of each repeated measurement is 
+$$
+{Var}(y_{ij}) = {Var}(u_i + v_it_j +\epsilon_i) = \sigma_u^2+2\sigma_{uv}t_j+\sigma_v^2t_j^2+\sigma^2,
+$$
+where random effects
+
+- $\epsilon_i \sim N(0,\sigma^2)$ "normal" random effects.
+- $u_i \sim N(0,\sigma_u^2)$ is the random effect specific to the subject $i$.
+- $v_i \sim N(0,\sigma_v^2)$ allows the linear regression fits for each individual to differ in slope. These are allowed to be correlated with the $u_i$ random intercept effects.
+
+Let's note here that this model allows correlation between residuals (at different time points) of the same individual.  
 
 ```{r}
 
 # create a random intercept and random slope model
-BPRS_rims <- lmer(bprs ~ week + treatment + (week | subject), data = BPRSL, REML = FALSE)
+BPRS_SLO <- lmer(bprs ~ week + treatment + (week | subject), data = BPRSL, REML = FALSE)
 
 # print a summary of the model
-summary(BPRS_rims)
+summary(BPRS_SLO)
 
 ```
 
+Commenting: 
 
-```{r}
-# perform an ANOVA test on the random intercept model and the random intercept and random slope model
-anova(BPRS_rims, BPRS_rim)
-
-```
+- Log-likelihood is bit better for SLO than RIM,
+- Variances of random effects seems to be larger for SLO than for RIM. New slope error term don't capture variance from the model, variance is small for it. 
+- Overall change from the RIM model is quite minimal
 
 ----------------------------------------------------
 
-### Random intercept and random slope model with interaction
+### Random intercept and random slope model with interaction (INT)
 
 ----------------------------------------------------
 
-Finally, we can fit a random intercept and slope model that allows for a group × time interaction.
+Finally, we can fit a random intercept and slope model that allows for a treatment × time interaction.
+
+The form of INT for the subject $i$ and at the time $t_j$ where $j$ represent the week 
+$$
+y_{ij} = (\beta_0 + u_i) + (\beta_1+v_i) t_j + \beta_2 x_i + \beta_3 x_it_j  + \epsilon_{ij}.
+$$
 
 ```{r}
-# create a random intercept and random slope model
-BPRS_rimsi <- lmer(bprs ~ week * treatment + (week | subject), data = BPRSL, REML = FALSE)
+# create a random intercept and random slope model with week x treatment interaction
+BPRS_INT <- lmer(bprs ~ week * treatment + (week | subject), data = BPRSL, REML = FALSE)
 
 # print a summary of the model
-summary(BPRS_rimsi)
+summary(BPRS_INT)
 
 ```
 
-Then let's look at the analysis of variance between two latest models: random intercept with random slope with and without group and time interaction.  
+Remarks: 
+
+- Log-likelihood is ever so slightly better for INT than SLO, but it is very close call. 
+- Variances for the random effects are just a bit lower for INT than SLO. 
+- For the fixed effects the new variable week x treatment2 has a bit of a effect for the model. Perhaps for the week x treatment2 term we have a really weak statistical significance, so it indicates that for these two treatments there could be a bit different slopes in general. 
+
+Next let's draw plots for different model fits to compare. 
 
 ```{r}
-# perform an ANOVA test on the two models
-anova(BPRS_rimsi, BPRS_rims)
 
-```
-
-We will draw also the individual models of the latest model with interaction. So well get a fitted line for each of the subjects. 
-
-```{r}
 # Create a vector of the fitted values
-fitted <- fitted(BPRS_rimsi)
+fitted_RIM <- fitted(BPRS_RIM)
 
 # Create a new column fitted to BPRSL
-BPRSL_rimsifit <- BPRSL %>%
-  mutate(fitted)
+BPRSL <- BPRSL %>%
+  mutate(fitted_RIM)
 
-# draw the plot of BPRSL
-ggplot(BPRSL_rimsifit, aes(x = week, y = fitted, linetype = subject)) +
-  geom_line()
+
+
+ggplot(BPRSL, aes(x = week, y = bprs, group = subject)) +
+  geom_line(aes(linetype = treatment)) + ggtitle("Original observations") +
+  theme(legend.position = "top")
+# Draw the plot
+
+ggplot(BPRSL, aes(x = week, y = fitted_RIM, group = subject)) +
+  geom_line(aes(linetype = treatment)) + ggtitle("Random intercept fit") +
+  theme(legend.position = "top")
+
+# Create a vector of the fitted values
+fitted_SLO <- fitted(BPRS_SLO)
+
+# Create a new column fitted to BPRSL
+BPRSL <- BPRSL %>%
+  mutate(fitted_SLO)
+
+# draw the plot
+
+ggplot(BPRSL, aes(x = week, y = fitted_SLO, group = subject)) +
+  geom_line(aes(linetype = treatment)) + ggtitle("Random intercept + slope fit") +
+  theme(legend.position = "top")
+
+
+# Create a vector of the fitted values
+fitted_INT <- fitted(BPRS_INT)
+
+# Create a new column fitted to BPRSL
+BPRSL <- BPRSL %>%
+  mutate(fitted_INT)
+
+# draw the plot
+
+ggplot(BPRSL, aes(x = week, y = fitted_INT, group = subject)) +
+  geom_line(aes(linetype = treatment)) + ggtitle("Random intercept + slope + interaction fit") +
+  theme(legend.position = "top")
 
 
 ```
+
+Random intercept with random slope with and without interaction is notably different than the random intercept. And perhaps the random intercept with random slope is better for capturing those subject whose symptoms are not decreasing. 
+
+It's quite hard to compare with the actual data because it's so variable and it looks like in the original data it is hard to fit linear model for it. Individual slopes seem to capture the effect that perhaps those who have stronger symptoms will have more "space" to recover and getting better than with those subjects who are better at the start. 
 
 -----------------------------------------------------
 
 ### Comments on the exercises and learning
 
 -----------------------------------------------------
+
+This week was really tough to manage and have enough time for exercises. But I managed to squeeze these in time. I think I learned quite a bit this week for these model because it was a struggle. And with better R skills it would have been a lot easier. Intepretation were really challenging this week I think and linear mixed effect models are not that easy to understand as they first seem to be. 
+
+It get me a lot of time to figure out that in BPRS data subjects were not individual so there was two subject = 1 persons. I figured this out just in the end. I had fun still in spite of the challenges. 

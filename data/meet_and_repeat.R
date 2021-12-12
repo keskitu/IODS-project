@@ -61,10 +61,21 @@ summary(RATS)
 # 2. Convert the categorical variables of both 
 # data sets to factors. (1 point)
 
+# let's change subject column so 
+# that all are individuals
+
+for (i in 21:40){
+  BPRS[i, 2] <- i
+}
+
 BPRS <- within(BPRS, {
   treatment <- factor(treatment)
   subject <- factor(subject)
 })
+
+# let's change subject column so 
+# that all are individuals
+
 
 RATS <- within(RATS, {
   ID <- factor(ID)
@@ -87,7 +98,6 @@ BPRSL <- gather(BPRS, key = weeks, value = bprs, week0:week8) %>%
 RATSL <- gather(RATS, key = WD, value = Weight, -ID, -Group) %>%
   mutate(Time = as.integer(substr(WD,3,4)))
 
-
 ###################################
 #### Exercise 4:###################
 ###################################
@@ -105,11 +115,26 @@ summary(BPRS)
 
 # Brief summary of the variables:
 
+# For the row we have all the subjects (column 2)
+# and their treatment group (column 1) and
+# all the measured bprs for each week 
+# in the study (columns week0 to week8)
+
 str(BPRSL)
-head(BPRSL, 10)
+head(BPRSL, 20)
 summary(BPRSL)
 
 # Brief summary of the variables:
+
+# Column 1 is the treatment group where the 
+# subject (column 2) is. Weeks column indicates 
+# the time point of the measurement and bprs column is 
+# the measured bprs. Week is the week in question
+# but in integer form. Long form puts the 
+# wide form rows (measures in each time point) 
+# to one column (bprs) and the other
+# variables are the dimensions of the data and
+# tells which individual was measured and when
 
 str(RATS)
 head(RATS, 10)
@@ -117,12 +142,27 @@ summary(RATS)
 
 # Brief summary of the variables:
 
+# For the row we have all the rats (column 1)
+# and their diet group (column 2) and
+# all the measured weight for each day  
+# in the study (columns WD1 to WD50)
+
 str(RATSL)
-head(RATSL, 10)
+head(RATSL, 20)
 summary(RATSL)
 
 # Brief summary of the variables:
 
+# Column 1 is the ID for the rats (which rat 
+# is measured). Group tells the diet group where
+# the individual rat is. WD column indicates 
+# the time point of the measurement and Weight column is 
+# the measured weight, Time is time point in question
+# but in integer form. Long form puts the 
+# wide form rows (measures in each time point) 
+# to one column (Weight) and the other
+# variables are the dimensions of the data and
+# tells which rat was measured and when
 
 # let's write long files to csv files for the analysis
 
